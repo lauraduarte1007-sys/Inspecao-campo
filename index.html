@@ -97,7 +97,7 @@ details.help summary{cursor:pointer;font-weight:700;min-height:32px;display:flex
 .chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .foot{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:10px 0;display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 .auth{max-width:440px;margin:0 auto}.ahero{text-align:center;margin:8px 0 14px}.ahero svg{max-width:300px;width:100%;height:auto}.ahero p{margin:6px 0 0}
-.aform{display:grid;gap:12px;margin:14px 0 8px}.aform .btn{justify-content:center;min-height:48px}.aerr{color:var(--err,#b3261e);background:#b3261e14;border-radius:10px;padding:10px 12px;margin:4px 0 0;font-size:14px}
+.aform{display:grid;gap:12px;margin:14px 0 8px}.aok{color:#1b5e20;background:#2e7d3214;border-radius:10px;padding:10px 12px;margin:4px 0 0;font-size:14px}.lnk{margin-top:4px}.aform .btn{justify-content:center;min-height:48px}.aerr{color:var(--err,#b3261e);background:#b3261e14;border-radius:10px;padding:10px 12px;margin:4px 0 0;font-size:14px}
 .who{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}.wn{display:flex;gap:8px;align-items:center;flex:1 1 180px;min-width:0}.wn b{display:block}.wn small{color:var(--mut);display:block;font-size:13px}.wn svg{flex:none}
 .who .ct,.btn .ct{margin-left:6px}
 .ilink{display:block;width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit}.ilink span{display:block;font-size:14px;margin-top:4px}
@@ -270,9 +270,10 @@ class AppErr extends Error{constructor(code,msg){super(msg||code);this.code=code
 const normMat=m=>String(m||'').trim().toLowerCase().replace(/\s+/g,'');
 const okMat=m=>/^[a-z0-9._-]{2,40}$/.test(m);
 let B=null,ME=null,UL=null,entered=false,syncOn=false,synced0=false,pollT=0,pendT=0,cursor=0,netDown=false,lastPull=0,tplChk=0,tplVer='',FZ=null;
-const AU={st:MODE==='local'?'in':'boot',err:'',tab:'in',busy:false,f:{nome:'',mat:''}};
+const AU={st:MODE==='local'?'in':'boot',err:'',msg:'',tab:'in',busy:false,f:{nome:'',mat:''}};
 const isAdm=()=>!!ME&&ME.role==='admin'&&ME.status==='ativo';
-const pendN=()=>(UL||[]).filter(u=>u.status==='pendente').length;
+const isReq=u=>!!u&&((u.reset&&u.status==='pendente')||!!u.pedido);
+const pendN=()=>(UL||[]).filter(u=>u.status==='pendente'||u.pedido).length;
 const ERRM={cred:'Matrícula ou senha incorretas.',exists:'Esta matrícula já tem cadastro. Use “Entrar”.',weak:'Senha fraca: use pelo menos 6 caracteres.',net:'Sem conexão com o banco.',many:'Muitas tentativas. Aguarde alguns minutos e tente de novo.',
   denied:'O banco recusou o acesso. Confira se as regras de segurança foram publicadas.',auth:'Sua sessão expirou. Entre de novo.','setup-auth':'O login por e-mail/senha não está ativado no Firebase (Authentication → Método de login).',
   'setup-key':'A configuração do banco (config.js) está incorreta.','setup-db':'O banco Firestore ainda não foi criado neste projeto.',quota:'O banco atingiu o limite do plano por hoje. Tente mais tarde ou fale com o administrador.',
@@ -301,6 +302,9 @@ function mkApi(base){base=String(base).replace(/\/+$/,'');let tok=null;
     setUser:(uid,p)=>call('PATCH','/users/'+P(uid),p),
     delUser:uid=>call('DELETE','/users/'+P(uid)),
     resetPw:(uid,senha)=>call('PATCH','/users/'+P(uid),{senha}),
+    pedirSenha:(nome,mat,senha)=>call('POST','/senha',{nome,mat,senha}),
+    aprovarSenha:u=>call('PATCH','/users/'+P(u.uid),{aprovarSenha:true}),
+    recusarSenha:u=>call('PATCH','/users/'+P(u.uid),{recusarSenha:true}),
     async pull(c){const out=[];let cur=+c||0;for(let g=0;g<60;g++){const j=await call('GET','/docs?since='+cur);out.push(...(j.docs||[]));cur=Math.max(cur,+j.cursor||0);if(!j.more)break}return{docs:out,cursor:cur}},
     push:list=>call('POST','/docs',{docs:list}),
     async watch(signal,cb){let r;try{r=await fetch(base+'/eventos',{headers:tok?{Authorization:'Bearer '+tok}:{},signal,cache:'no-store',credentials:'omit'})}catch(e){throw new AppErr('net')}
@@ -325,17 +329,25 @@ function mkFb(cfg){let F=null,auth=null,db=null,uid=null;const mail=m=>m+'@matri
   async function mkProf(nome,mat){let first=!(await F.getDoc(F.doc(db,'config','admin'))).exists();
     for(let k=0;k<2;k++){const p={mat,nome,role:first?'admin':'user',status:first?'ativo':'pendente',criado:F.serverTimestamp()},b=F.writeBatch(db);b.set(F.doc(db,'users',uid),p);if(first)b.set(F.doc(db,'config','admin'),{uid});
       try{await b.commit();return{uid,mat,nome,role:p.role,status:p.status}}catch(e){if(first&&/permission/.test(String(e.code))){first=false;continue}throw e}}}
-  const ensure=async(nome,mat)=>{const p=await prof();if(p)return p;const m=mat||String((auth.currentUser&&auth.currentUser.email)||'').split('@')[0];return mkProf(nome||m,m)};
+  const ensure=async(nome,mat)=>{const p=await prof();if(p)return p;const m=mat||String((auth.currentUser&&auth.currentUser.email)||'').split('@')[0].split('+')[0];return mkProf(nome||m,m)};
+  const conta=async mat=>{try{const s=await F.getDoc(F.doc(db,'contas',mat));if(s.exists()&&s.data().email)return s.data().email}catch(e){}return mail(mat)};
   const pq=c=>[F.where('ts','>',F.Timestamp.fromMillis(Math.max(0,(+c||0)-2000))),F.orderBy('ts')];
   return{caps:{resetPw:false},
     async init(){try{F=await import('./firebase.js')}catch(e){throw new AppErr('net','Não foi possível carregar o módulo do Firebase.')}
       try{const app=F.initializeApp(cfg);auth=F.initializeAuth(app,{persistence:[F.indexedDBLocalPersistence,F.browserLocalPersistence]});db=F.getFirestore(app)}catch(e){throw new AppErr('setup-key',e&&e.message)}
       const u=await new Promise(ok=>{const off=F.onAuthStateChanged(auth,x=>{off();ok(x)},()=>ok(null))});uid=u?u.uid:null;return uid},
-    login:(mat,senha)=>T(async()=>{const c=await F.signInWithEmailAndPassword(auth,mail(mat),senha);uid=c.user.uid;return ensure('',mat)}),
+    login:(mat,senha)=>T(async()=>{const c=await F.signInWithEmailAndPassword(auth,await conta(mat),senha);uid=c.user.uid;return ensure('',mat)}),
+    pedirSenha:(nome,mat,senha)=>T(async()=>{const em=mat+'+r'+Date.now().toString(36)+'@matricula.example.com',c=await F.createUserWithEmailAndPassword(auth,em,senha);uid=c.user.uid;
+      try{await F.setDoc(F.doc(db,'users',uid),{mat,nome,role:'user',status:'pendente',criado:F.serverTimestamp(),reset:true,conta:em})}finally{try{await F.signOut(auth)}catch(e){}uid=null}}),
+    aprovarSenha:(u,all)=>T(async()=>{const old=(all||[]).filter(x=>x.mat===u.mat&&x.uid!==u.uid&&x.uid!==uid),b=F.writeBatch(db);
+      b.update(F.doc(db,'users',u.uid),{status:'ativo',role:old.some(x=>x.role==='admin'&&x.status==='ativo')?'admin':'user'});
+      for(const x of old)b.delete(F.doc(db,'users',x.uid));
+      b.set(F.doc(db,'contas',u.mat),{email:u.conta,uid:u.uid});await b.commit()}),
+    recusarSenha:u=>T(()=>F.deleteDoc(F.doc(db,'users',u.uid))),
     register:(nome,mat,senha)=>T(async()=>{const c=await F.createUserWithEmailAndPassword(auth,mail(mat),senha);uid=c.user.uid;return ensure(nome,mat)}),
     logout:()=>T(async()=>{await F.signOut(auth);uid=null}),
     me:()=>T(()=>ensure()),
-    users:()=>T(async()=>(await F.getDocs(F.collection(db,'users'))).docs.map(x=>{const d=x.data();return{uid:x.id,mat:d.mat,nome:d.nome,role:d.role,status:d.status}})),
+    users:()=>T(async()=>(await F.getDocs(F.collection(db,'users'))).docs.map(x=>{const d=x.data();return{uid:x.id,mat:d.mat,nome:d.nome,role:d.role,status:d.status,reset:!!d.reset,conta:d.conta||''}})),
     setUser:(id,p)=>T(()=>F.updateDoc(F.doc(db,'users',id),p)),
     delUser:id=>T(()=>F.deleteDoc(F.doc(db,'users',id))),
     pull:c=>T(async()=>{const out=[];let mx=+c||0,last=null;
@@ -437,13 +449,15 @@ async function boot(){
   if(cm&&cm.uid===uid&&cm.bk===BK){ME=cm;if(ME.status==='ativo'){AU.st='in';enter()}else{AU.st='pend';render()}}
   else{AU.st='boot';render()}
   try{setMe(await B.me())}catch(e){if(e.code==='auth'){AU.st='out';ME=null;entered=false;render()}else if(!ME){AU.st='out';AU.err=msgErr(e,1);render()}}}
-async function doAuth(form){if(AU.busy||!B)return;const f=new FormData(form),up=AU.tab==='up',mat=normMat(f.get('mat')),senha=String(f.get('senha')||''),nome=String(f.get('nome')||'').trim().replace(/\s+/g,' ');
+async function doAuth(form){if(AU.busy||!B)return;const f=new FormData(form),pw=AU.tab==='pw',up=AU.tab==='up'||pw,mat=normMat(f.get('mat')),senha=String(f.get('senha')||''),nome=String(f.get('nome')||'').trim().replace(/\s+/g,' ');
   AU.f={nome,mat};const bad=m=>{AU.err=m;vLogin()};
   if(up&&nome.length<3)return bad('Escreva o nome completo.');
   if(!okMat(mat))return bad('Matrícula inválida: use só letras, números, ponto, hífen ou sublinhado (2 a 40).');
   if(senha.length<6)return bad('A senha precisa ter pelo menos 6 caracteres.');
   if(up&&senha!==String(f.get('senha2')||''))return bad('As senhas não conferem.');
-  AU.busy=true;AU.err='';vLogin();
+  AU.busy=true;AU.err='';AU.msg='';vLogin();
+  if(pw){try{await B.pedirSenha(nome,mat,senha);AU.busy=false;AU.tab='in';AU.f={nome:'',mat};AU.msg='Pedido enviado. Quando um administrador aprovar, entre com a matrícula e a senha nova.';vLogin()}
+    catch(e){AU.busy=false;AU.err=msgErr(e,1);vLogin()}return}
   try{const p=up?await B.register(nome,mat,senha):await B.login(mat,senha);AU.busy=false;AU.f={nome:'',mat:''};
     if(p&&p.role==='admin'&&up)st('Você é o primeiro cadastro: virou administrador(a)');setMe(p)}
   catch(e){AU.busy=false;AU.err=msgErr(e,1);vLogin()}}
@@ -458,13 +472,13 @@ async function recheck(){if(!B)return;try{setMe(await B.me())}catch(e){st(msgErr
 async function loadUsers(){if(!isAdm()||!B)return;try{UL=(await B.users()).sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt'))}catch(e){}
   if(!S.ed&&AU.st==='in'&&(S.view==='users'||S.view==='list'))render()}
 async function userAct(t){const a=t.dataset.ua,uid=t.dataset.uid,u=(UL||[]).find(x=>x.uid===uid);if(!u||!isAdm())return;
-  if(uid===ME.uid){st(ERRM.self);return}
+  if(uid===ME.uid&&!['aprovarsenha','recusarsenha'].includes(a)){st(ERRM.self);return}
   if(['desativar','user'].includes(a)&&u.role==='admin'&&(UL||[]).filter(x=>x.role==='admin'&&x.status==='ativo').length<2){st(ERRM.last);return}
-  if(['recusar','desativar','remover'].includes(a)&&S.uArm!==a+uid){S.uArm=a+uid;vUsers();return}S.uArm='';
+  if(['recusar','desativar','remover','recusarsenha'].includes(a)&&S.uArm!==a+uid){S.uArm=a+uid;vUsers();return}S.uArm='';
   if(a==='senha'){S.pwFor=S.pwFor===uid?'':uid;vUsers();return}
   t.disabled=true;
-  try{if(a==='ativar')await B.setUser(uid,{status:'ativo'});else if(a==='recusar'||a==='desativar')await B.setUser(uid,{status:'inativo'});else if(a==='admin')await B.setUser(uid,{role:'admin'});else if(a==='user')await B.setUser(uid,{role:'user'});else if(a==='remover')await B.delUser(uid);
-    st(a==='ativar'?`${u.nome} liberado(a)`:'Acesso atualizado')}catch(e){st(msgErr(e))}
+  try{if(a==='ativar')await B.setUser(uid,{status:'ativo'});else if(a==='recusar'||a==='desativar')await B.setUser(uid,{status:'inativo'});else if(a==='admin')await B.setUser(uid,{role:'admin'});else if(a==='user')await B.setUser(uid,{role:'user'});else if(a==='remover')await B.delUser(uid);else if(a==='aprovarsenha')await B.aprovarSenha(u,UL);else if(a==='recusarsenha')await B.recusarSenha(u);
+    st(a==='ativar'?`${u.nome} liberado(a)`:a==='aprovarsenha'?'Senha nova aprovada: a pessoa já pode entrar com ela':a==='recusarsenha'?'Pedido recusado':'Acesso atualizado')}catch(e){st(msgErr(e))}
   await loadUsers()}
 
 /* ---------- modelo do relatório guardado no banco (só para logins ativos) ---------- */
@@ -565,7 +579,7 @@ function instHTML(){if(!SA||instNo||isInst()||!document.querySelector('link[rel=
   return `<div class="inst"><b>Instale o app neste celular</b><p>${t}</p><div class="row">${BIP?'<button class="btn pri sm" data-a="inst">Instalar app</button>':''}<button class="btn sm" data-a="instno">Agora não</button></div></div>`}
 /* ---------- telas de acesso ---------- */
 function vBoot(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;st('');$('#main').innerHTML='<div class="empty"><p><b>Abrindo…</b></p></div>'}
-function vLogin(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;st('');const up=AU.tab==='up',f=AU.f;
+function vLogin(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;st('');if(AU.tab==='pw')return vReset();const up=AU.tab==='up',f=AU.f;
   $('#main').innerHTML=`<div class="auth">
   <div class="ahero">${frameSVG(3)}<p class="mut">Relatório de inspeção estrutural em campo, com fotos, no modelo da empresa.</p></div>
   ${instHTML()}
@@ -576,9 +590,20 @@ function vLogin(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidde
    <label class="f w"><span>Senha</span><input name="senha" type="password" autocomplete="${up?'new-password':'current-password'}" minlength="6" required></label>
    ${up?'<label class="f w"><span>Confirmar senha</span><input name="senha2" type="password" autocomplete="new-password" minlength="6" required></label>':''}
    <button class="btn pri" type="submit" ${AU.busy||!B?'disabled':''}>${AU.busy?(up?'Criando cadastro…':'Entrando…'):(up?'Criar cadastro':'Entrar')}</button>
+   ${AU.err?`<p class="aerr" role="alert">${esc(AU.err)}</p>`:''}${AU.msg?`<p class="aok" role="status">${esc(AU.msg)}</p>`:''}
+  </form>
+  ${up?'<p class="note">O cadastro fica aguardando a liberação de um administrador. O primeiro cadastro do app vira administrador.</p>':'<button class="btn sm lnk" data-atab="pw">Esqueci a senha</button>'}</div>`}
+function vReset(){const f=AU.f;
+  $('#main').innerHTML=`<div class="auth"><h2>Pedir nova senha</h2><p class="mut">Escolha a senha nova. O pedido vai para um administrador, e a senha nova passa a valer quando ele aprovar.</p>
+  <form id="fauth" class="aform" novalidate>
+   <label class="f w"><span>Nome completo</span><input name="nome" autocomplete="name" autocapitalize="words" value="${esc(f.nome)}" required></label>
+   <label class="f w"><span>Matrícula</span><input name="mat" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" value="${esc(f.mat)}" required></label>
+   <label class="f w"><span>Nova senha</span><input name="senha" type="password" autocomplete="new-password" minlength="6" required></label>
+   <label class="f w"><span>Confirmar nova senha</span><input name="senha2" type="password" autocomplete="new-password" minlength="6" required></label>
+   <button class="btn pri" type="submit" ${AU.busy||!B?'disabled':''}>${AU.busy?'Enviando pedido…':'Pedir nova senha'}</button>
    ${AU.err?`<p class="aerr" role="alert">${esc(AU.err)}</p>`:''}
   </form>
-  <p class="note">${up?'O cadastro fica aguardando a liberação de um administrador. O primeiro cadastro do app vira administrador.':'Esqueceu a senha? Fale com o administrador do app.'}</p></div>`}
+  <button class="btn sm lnk" data-atab="in">← Voltar para entrar</button></div>`}
 function vPend(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;st('');const ina=ME&&ME.status==='inativo';
   $('#main').innerHTML=`<div class="auth"><div class="empty"><p><b>${ina?'Acesso desativado':'Cadastro aguardando liberação'}</b></p>${ME?`<p class="mut">${esc(ME.nome)} · matrícula ${esc(ME.mat)}</p>`:''}
   <p>${ina?'Seu acesso a este app está desativado. Fale com o administrador.':'Seu cadastro foi enviado. Assim que um administrador liberar, o app abre sozinho.'}</p>
@@ -587,18 +612,21 @@ function vPend(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidden
 const whoHTML=()=>MODE==='local'||!ME?'':`<div class="who"><span class="wn">${IC.user}<span><b>${esc(ME.nome)}</b><small>Matrícula ${esc(ME.mat)}${isAdm()?' · administrador':''}</small></span></span>
   ${isAdm()?`<button class="btn sm" data-a="users">Usuários${pendN()?`<span class="ct">${pendN()}</span>`:''}</button>`:''}<button class="btn sm${S.outArm?' del':''}" data-a="sair">${S.outArm?'Sair mesmo assim':'Sair'}</button></div>
   ${S.outArm?`<p class="aerr">${pl(dirty.size,'alteração ainda não foi enviada','alterações ainda não foram enviadas')} ao banco. Se sair agora, ela${dirty.size>1?'s':''} se perde${dirty.size>1?'m':''}. Conecte-se à internet e espere aparecer “Sincronizado”.</p>`:''}
-  ${isAdm()&&pendN()?`<button class="inst ilink" data-a="users"><b>${pl(pendN(),'cadastro aguardando','cadastros aguardando')} liberação</b><span>Toque para ver e liberar.</span></button>`:''}`;
+  ${isAdm()&&pendN()?`<button class="inst ilink" data-a="users"><b>${pl(pendN(),'pedido aguardando','pedidos aguardando')} você</b><span>Cadastros novos e pedidos de senha nova. Toque para ver.</span></button>`:''}`;
 function vUsers(){$('#ttl').textContent='Usuários e acessos';$('#back').hidden=false;
   if(!isAdm()){S.view='list';return vList()}
-  const U=UL||[],grp=[['pendente','Aguardando liberação'],['ativo','Ativos'],['inativo','Desativados']];
+  const U=UL||[],R=U.filter(isReq),grp=[['pendente','Aguardando liberação'],['ativo','Ativos'],['inativo','Desativados']];
   const btn=(a,u,l,c)=>`<button class="btn sm${c?' '+c:''}" data-ua="${a}" data-uid="${esc(u.uid)}">${S.uArm===a+u.uid?'Toque de novo':l}</button>`;
   const row=u=>{const me=u.uid===ME.uid;return `<div class="urow"><div class="ui"><b>${esc(u.nome||'—')}</b><small>Matrícula ${esc(u.mat||'—')}${u.role==='admin'?' · administrador':''}${me?' · você':''}</small></div><div class="row">${me?'':
       u.status==='pendente'?btn('ativar',u,'Liberar','pri')+btn('recusar',u,'Recusar','del'):
       u.status==='ativo'?btn(u.role==='admin'?'user':'admin',u,u.role==='admin'?'Tirar administrador':'Tornar administrador')+(B&&B.caps.resetPw?btn('senha',u,'Nova senha'):'')+btn('desativar',u,'Desativar','del'):
       btn('ativar',u,'Reativar')+btn('remover',u,'Remover cadastro','del')}</div>
     ${S.pwFor===u.uid?`<form class="row pwf" data-pwf="${esc(u.uid)}"><input name="pw" type="password" minlength="6" autocomplete="new-password" placeholder="Nova senha (mín. 6)" aria-label="Nova senha para ${esc(u.nome)}"><button class="btn sm pri">Salvar senha</button></form>`:''}</div>`};
+  const req=u=>`<div class="urow"><div class="ui"><b>${esc((u.pedido&&u.pedido.nome)||u.nome||'—')}</b><small>Matrícula ${esc(u.mat||'—')} · pediu uma senha nova${u.pedido&&u.pedido.ts?' em '+esc(new Date(u.pedido.ts).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})):''}</small></div>
+    <p class="note" style="margin:0">Confirme com a pessoa antes de aprovar.</p><div class="row">${btn('aprovarsenha',u,'Aprovar nova senha','pri')+btn('recusarsenha',u,'Recusar','del')}</div></div>`;
   $('#main').innerHTML=`<h2>Usuários e acessos</h2>${UL?'':'<p class="mut">Carregando…</p>'}
-  ${grp.map(([s,t])=>{const L=U.filter(u=>u.status===s);return L.length?`<h3>${t} <span class="ct">${L.length}</span></h3>${L.map(row).join('')}`:''}).join('')}
+  ${R.length?`<h3>Pedidos de nova senha <span class="ct">${R.length}</span></h3>${R.map(req).join('')}`:''}
+  ${grp.map(([s,t])=>{const L=U.filter(u=>u.status===s&&!(u.reset&&u.status==='pendente'));return L.length?`<h3>${t} <span class="ct">${L.length}</span></h3>${L.map(row).join('')}`:''}).join('')}
   <h3>Modelo do relatório</h3><section class="xl"><p style="margin:0"><b>${CFG?esc(CFG.name):'Nenhum modelo enviado'}</b></p>
    <p class="mut" style="margin:4px 0 10px">${CFG?'Todos os usuários recebem este modelo automaticamente.':'Envie o arquivo .xlsx do modelo: ele fica guardado no banco e só abre para logins ativos.'}</p>
    <label class="btn up${CFG?'':' pri'}">${CFG?'Enviar nova versão (.xlsx)':'Enviar modelo (.xlsx)'}<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-up="tpl"></label>${tplErr?`<p class="note">${esc(tplErr)}</p>`:''}</section>
@@ -911,7 +939,7 @@ function onRemote(){if(S.ed||AU.st!=='in'||S.view==='users')return;if(S.view==='
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-a],[data-open],[data-tab],[data-ea],[data-rmf],[data-rmg],[data-sort],[data-setcd],[data-setaf],[data-ens],[data-atab],[data-ua]');if(!t)return;
   const a=t.dataset.a,i=docs.get(S.cur);if(S.outArm&&a!=='sair')S.outArm=false;
-  if(t.dataset.atab){AU.tab=t.dataset.atab;AU.err='';vLogin();return}
+  if(t.dataset.atab){AU.tab=t.dataset.atab;AU.err='';AU.msg='';vLogin();return}
   if(t.dataset.ua){userAct(t);return}
   if(t.dataset.open){S.cur=t.dataset.open;S.view='edit';S.tab='itens';S.delArm=false;render();scrollTo(0,0)}
   else if(t.dataset.tab){S.tab=t.dataset.tab;S.delArm=false;render()}

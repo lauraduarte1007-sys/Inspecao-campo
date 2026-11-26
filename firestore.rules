@@ -2,6 +2,7 @@ rules_version = '2';
 // Regras de segurança do app Inspeção Estrutural (Firestore).
 // Só quem tem cadastro ATIVO lê e grava inspeções, fotos e o modelo do relatório.
 // Cada pessoa cria o próprio cadastro como "pendente"; o primeiro cadastro do app vira administrador.
+// "Esqueci a senha" cria uma conta nova para a mesma matrícula, que só vale depois que um administrador aprova.
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
@@ -10,13 +11,17 @@ service cloud.firestore {
     function ativo() { return signedIn() && exists(userPath(request.auth.uid)) && meDoc().data.status == 'ativo'; }
     function admin() { return ativo() && meDoc().data.role == 'admin'; }
     function semAdmin() { return !exists(/databases/$(database)/documents/config/admin); }
-    function matOk(m) { return m is string && request.auth.token.email == m + '@matricula.example.com'; }
+    function matOk(m) { return m is string
+      && request.auth.token.email.split('@')[1] == 'matricula.example.com'
+      && request.auth.token.email.split('@')[0].split('[+]')[0] == m; }
 
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || admin());
       allow create: if signedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['mat', 'nome', 'role', 'status', 'criado'])
+        && request.resource.data.keys().hasOnly(['mat', 'nome', 'role', 'status', 'criado', 'reset', 'conta'])
         && matOk(request.resource.data.mat)
+        && (!('conta' in request.resource.data) || request.resource.data.conta == request.auth.token.email)
+        && (!('reset' in request.resource.data) || (request.resource.data.reset == true && request.resource.data.role == 'user'))
         && request.resource.data.nome is string && request.resource.data.nome.size() >= 2 && request.resource.data.nome.size() <= 80
         && ((request.resource.data.role == 'user' && request.resource.data.status == 'pendente')
             || (request.resource.data.role == 'admin' && request.resource.data.status == 'ativo' && semAdmin()
@@ -26,6 +31,11 @@ service cloud.firestore {
         && request.resource.data.status in ['pendente', 'ativo', 'inativo']
         && request.resource.data.role in ['user', 'admin'];
       allow delete: if admin() && request.auth.uid != uid;
+    }
+
+    match /contas/{m} {
+      allow read: if true;
+      allow write: if admin();
     }
 
     match /config/{k} {

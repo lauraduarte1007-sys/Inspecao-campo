@@ -1,7 +1,7 @@
 /* Inspeção Estrutural — funciona sem internet.
    O app abre na hora a partir do aparelho e se atualiza sozinho em segundo plano quando há conexão.
    Os dados (banco da equipe) nunca passam por este cache. */
-const V = 'inspecao-campo-7126e27e72';
+const V = 'inspecao-campo-0421e6122c';
 const SHELL = ['./', './index.html', './config.js', './firebase.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-180.png'];
 
 self.addEventListener('install', e => {

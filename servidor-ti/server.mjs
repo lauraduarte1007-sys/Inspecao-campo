@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS sessions(th TEXT PRIMARY KEY, uid TEXT NOT NULL REFER
 CREATE TABLE IF NOT EXISTS docs(id TEXT PRIMARY KEY, kind TEXT NOT NULL, j TEXT NOT NULL, updated INTEGER NOT NULL, del INTEGER NOT NULL, by TEXT, byNome TEXT, seq INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS docs_seq ON docs(seq);
 CREATE TABLE IF NOT EXISTS fotos(id TEXT PRIMARY KEY, data TEXT NOT NULL, w INTEGER, h INTEGER, by TEXT, ts INTEGER NOT NULL);
-CREATE TABLE IF NOT EXISTS config(k TEXT PRIMARY KEY, v TEXT NOT NULL);`);
+CREATE TABLE IF NOT EXISTS config(k TEXT PRIMARY KEY, v TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS pedidos(mat TEXT PRIMARY KEY, nome TEXT NOT NULL, salt TEXT NOT NULL, hash TEXT NOT NULL, ts INTEGER NOT NULL);`);
 let SEQ = db.prepare('SELECT COALESCE(MAX(seq),0) AS m FROM docs').get().m;
 
 class HttpErr extends Error { constructor(status, code, msg) { super(msg || code); this.status = status; this.code = code; this.msg = msg || ''; } }
@@ -140,14 +141,40 @@ on('POST', '/api/login', async (req) => {
   return { token: newSession(u.uid), user: pub(u) };
 });
 
+on('POST', '/api/senha', async (req) => {
+  const b = await body(req), mat = normMat(b.mat), nome = String(b.nome || '').trim().replace(/\s+/g, ' '), senha = String(b.senha || '');
+  if (!okMat(mat)) E(400, 'bad-mat', 'matrícula inválida');
+  if (nome.length < 3 || nome.length > 80) E(400, 'bad-nome', 'nome inválido');
+  if (senha.length < 6 || senha.length > 200) E(400, 'weak', 'senha fraca');
+  if (tooMany('pw:' + ip(req), 10)) E(429, 'many');
+  failed('pw:' + ip(req));
+  const salt = crypto.randomBytes(16).toString('base64'), hash = await scrypt(senha, salt);
+  if (db.prepare('SELECT 1 FROM users WHERE mat = ?').get(mat))
+    db.prepare('INSERT INTO pedidos(mat,nome,salt,hash,ts) VALUES(?,?,?,?,?) ON CONFLICT(mat) DO UPDATE SET nome=excluded.nome, salt=excluded.salt, hash=excluded.hash, ts=excluded.ts').run(mat, nome, salt, hash, Date.now());
+  notify();
+  return { ok: true };   // mesma resposta para matrícula existente ou não
+});
+
 on('POST', '/api/logout', (req) => { const s = auth(req); db.prepare('DELETE FROM sessions WHERE th = ?').run(s.th); return { ok: true }; });
 on('GET', '/api/me', (req) => ({ user: pub(auth(req)) }));
 
-on('GET', '/api/users', (req) => { auth(req, 'admin'); return { users: db.prepare('SELECT uid,mat,nome,role,status FROM users ORDER BY nome').all() }; });
+on('GET', '/api/users', (req) => {
+  auth(req, 'admin');
+  const rows = db.prepare('SELECT u.uid,u.mat,u.nome,u.role,u.status,p.nome AS pnome,p.ts AS pts FROM users u LEFT JOIN pedidos p ON p.mat = u.mat ORDER BY u.nome').all();
+  return { users: rows.map(r => Object.assign({ uid: r.uid, mat: r.mat, nome: r.nome, role: r.role, status: r.status }, r.pts ? { pedido: { nome: r.pnome, ts: r.pts } } : {})) };
+});
 
 on('PATCH', '/api/users/:uid', async (req, p) => {
   const me = auth(req, 'admin'), b = await body(req), uid = decodeURIComponent(p.uid);
   const u = db.prepare('SELECT * FROM users WHERE uid = ?').get(uid); if (!u) E(404, 'notfound');
+  if (b.aprovarSenha || b.recusarSenha) {
+    const q = db.prepare('SELECT * FROM pedidos WHERE mat = ?').get(u.mat); if (!q) E(404, 'notfound');
+    tx(() => {
+      if (b.aprovarSenha) { db.prepare('UPDATE users SET salt=?, hash=? WHERE uid=?').run(q.salt, q.hash, uid); db.prepare('DELETE FROM sessions WHERE uid = ?').run(uid); }
+      db.prepare('DELETE FROM pedidos WHERE mat = ?').run(u.mat);
+    });
+    return { user: pub(db.prepare('SELECT * FROM users WHERE uid = ?').get(uid)) };
+  }
   if (uid === me.uid && (b.status !== undefined || b.role !== undefined)) E(403, 'self');
   const status = b.status !== undefined ? String(b.status) : u.status, role = b.role !== undefined ? String(b.role) : u.role;
   if (!['pendente', 'ativo', 'inativo'].includes(status) || !['admin', 'user'].includes(role)) E(400, 'bad-value');
@@ -168,7 +195,7 @@ on('DELETE', '/api/users/:uid', (req, p) => {
   if (uid === me.uid) E(403, 'self');
   const u = db.prepare('SELECT * FROM users WHERE uid = ?').get(uid); if (!u) E(404, 'notfound');
   if (u.role === 'admin' && u.status === 'ativo' && activeAdmins() < 2) E(409, 'last');
-  db.prepare('DELETE FROM users WHERE uid = ?').run(uid);
+  tx(() => { db.prepare('DELETE FROM users WHERE uid = ?').run(uid); db.prepare('DELETE FROM pedidos WHERE mat = ?').run(u.mat); });
   notify();
   return { ok: true };
 });
@@ -264,7 +291,7 @@ if (cmd === 'admin') {
   const salt = crypto.randomBytes(16).toString('base64'), hash = await scrypt(a2, salt);
   const u = db.prepare('SELECT uid FROM users WHERE mat = ?').get(normMat(a1));
   if (!u) { console.log('Matrícula não encontrada.'); process.exit(1); }
-  tx(() => { db.prepare('UPDATE users SET salt=?, hash=? WHERE uid=?').run(salt, hash, u.uid); db.prepare('DELETE FROM sessions WHERE uid=?').run(u.uid); });
+  tx(() => { db.prepare('UPDATE users SET salt=?, hash=? WHERE uid=?').run(salt, hash, u.uid); db.prepare('DELETE FROM sessions WHERE uid=?').run(u.uid); db.prepare('DELETE FROM pedidos WHERE mat = ?').run(normMat(a1)); });
   console.log('Senha alterada.'); process.exit(0);
 } else {
   server.listen(PORT, HOST, () => console.log(`Inspeção Estrutural — servidor na porta ${PORT}${STATIC ? ' (servindo o app de ' + STATIC + ')' : ''}. Banco: ${path.resolve(DB_FILE)}`));

@@ -53,6 +53,10 @@ Usuário (formato público): `{ "uid", "mat", "nome", "role": "admin"|"user", "s
 | `GET /api/users` | admin | — | `{users:[user…]}` |
 | `PATCH /api/users/:uid` | admin | qualquer um de `{status, role, nome, senha}` | `{user}`. Trocar a senha encerra as sessões da pessoa |
 | `DELETE /api/users/:uid` | admin | — | `{ok:true}` |
+| `POST /api/senha` | qualquer um | `{mat, nome, senha}` | `{ok:true}` (mesma resposta se a matrícula não existir). Guarda um **pedido de senha nova**; a senha atual continua valendo |
+| `PATCH /api/users/:uid` | admin | `{aprovarSenha: true}` ou `{recusarSenha: true}` | `{user}`. Aprovar troca a senha pela pedida e encerra as sessões da pessoa |
+
+Em `GET /api/users`, quem tem pedido de senha nova vem com `pedido: {nome, ts}`.
 
 ## Inspeções e itens (sincronização)
 
