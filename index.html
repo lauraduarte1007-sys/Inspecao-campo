@@ -96,6 +96,12 @@ details.help summary{cursor:pointer;font-weight:700;min-height:32px;display:flex
 .chip{border:1px solid var(--line);background:var(--bg);border-radius:16px;padding:4px 12px;min-height:34px;cursor:pointer;font-size:14px}
 .chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .foot{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:10px 0;display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.auth{max-width:440px;margin:0 auto}.ahero{text-align:center;margin:8px 0 14px}.ahero svg{max-width:300px;width:100%;height:auto}.ahero p{margin:6px 0 0}
+.aform{display:grid;gap:12px;margin:14px 0 8px}.aform .btn{justify-content:center;min-height:48px}.aerr{color:var(--err,#b3261e);background:#b3261e14;border-radius:10px;padding:10px 12px;margin:4px 0 0;font-size:14px}
+.who{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}.wn{display:flex;gap:8px;align-items:center;flex:1 1 180px;min-width:0}.wn b{display:block}.wn small{color:var(--mut);display:block;font-size:13px}.wn svg{flex:none}
+.who .ct,.btn .ct{margin-left:6px}
+.ilink{display:block;width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit}.ilink span{display:block;font-size:14px;margin-top:4px}
+.urow{border:1px solid var(--line,#d8dce1);border-radius:12px;padding:10px 12px;margin:0 0 8px;display:grid;gap:8px}.urow .ui b{display:block}.urow .ui small{color:var(--mut);font-size:13px}.urow .row{gap:6px}.pwf input{flex:1 1 160px;min-height:40px}
 .inst{background:var(--pan);border-left:4px solid var(--acc);border-radius:12px;padding:12px 14px;margin:4px 0 16px}.inst p{margin:6px 0 10px;font-size:14px}
 .empty{text-align:center;padding:28px 12px;border:2px dashed var(--line);border-radius:14px}
 .note{font-size:13px;color:var(--mut);margin:8px 0}
@@ -131,6 +137,7 @@ details.help summary{cursor:pointer;font-weight:700;min-height:32px;display:flex
  <div class="camtop"><button class="ib" data-a="camx" aria-label="Fechar câmera">✕</button><span class="camn" id="camn"></span><button class="btn sm" data-a="camx">Concluir</button></div>
  <div class="cambot"><button class="tor" data-a="camtorch" hidden aria-label="Lanterna"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></button><button class="shut" data-a="camshot" aria-label="Tirar foto"></button><span class="camth" id="camth"></span></div></div>
 <input type="file" id="imp" accept="application/json,.json" hidden>
+<script src="config.js"></script>
 <script>
 {
 const $=s=>document.querySelector(s);
@@ -152,7 +159,7 @@ const CAM={on:false,t:'',s:null,denied:false,torch:false,q:0};
 const canCam=()=>SA&&!CAM.denied&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)&&window.isSecureContext;
 const camBtn=(t,l,p)=>canCam()?`<button class="btn${p?' pri':''}" data-a="cam" data-t="${t}">${IC.cam} ${l}</button>`:`<label class="btn up${p?' pri':''}">${IC.cam} ${l}<input type="file" accept="image/*" capture="environment" data-up="${t}"></label>`;
 const cut=(t,n)=>t.length>n?t.slice(0,n-1).trimEnd()+'…':t;
-const IC={pin:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',cam:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h3.5l2-3h7l2 3H21v11H3z"/><circle cx="12" cy="13" r="3.6"/></svg>',
+const IC={user:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',pin:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',cam:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h3.5l2-3h7l2 3H21v11H3z"/><circle cx="12" cy="13" r="3.6"/></svg>',
  img:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-10 9"/></svg>',
  xl:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>'};
 const LV=['#ff0000','#ffc000','#ffff00','#92d050'],LT=['#fff','#1a1a1a','#1a1a1a','#1a1a1a'];
@@ -250,43 +257,212 @@ const IDB=(()=>{let p;const open=()=>p||(p=new Promise((ok,no)=>{try{const q=ind
  return{ok:()=>open().then(()=>true,()=>false),get:(s,k)=>run(s,'readonly',o=>o.get(k)).catch(()=>undefined),put:(s,k,v)=>run(s,'readwrite',o=>o.put(v,k)).then(()=>true,()=>false),del:(s,k)=>run(s,'readwrite',o=>o.delete(k)).catch(()=>{}),all:s=>run(s,'readonly',o=>o.getAll()).catch(()=>[]),clr:s=>run(s,'readwrite',o=>o.clear()).catch(()=>{})}})();
 
 const docs=new Map(),fmem=new Map(),dirty=new Map(),known=new Set();
-let col=null,fcol=null,dl=null,dlKnown=false,SA=false,seq=0,ft=0,flushing=false,idbOK=true,lastErr='';
-const S={view:'list',cur:null,tab:'dados',ed:null,newF:[],rmF:[],delArm:false,sort:'reg',last:{},critOpen:null};
+let dl=null,dlKnown=false,SA=true,seq=0,ft=0,flushing=false,idbOK=true,lastErr='';
+const S={view:'list',cur:null,tab:'dados',ed:null,newF:[],rmF:[],delArm:false,sort:'reg',last:{},critOpen:null,outArm:false,uArm:'',pwFor:''};
 
 function st(t){$('#st').textContent=t}
-function updSt(net){const n=dirty.size;st(!col?'Salvo neste aparelho':n?(net?`Sem conexão — ${n} pendente${n>1?'s':''}`:'Sincronizando…'):(lastErr||'Salvo na nuvem'))}
+/* ---------- banco da equipe: Firebase ou servidor da TI (config.js) ---------- */
+const CONF=(()=>{const c=window.INSP_CONFIG;return c&&typeof c==='object'?c:{}})();
+const MODE=CONF.backend==='firebase'&&CONF.firebase&&CONF.firebase.apiKey&&CONF.firebase.projectId?'firebase':CONF.backend==='api'&&CONF.api&&CONF.api.url?'api':'local';
+const BK=MODE==='firebase'?'fb:'+CONF.firebase.projectId:MODE==='api'?'api:'+String(CONF.api.url).replace(/\/+$/,''):'local';
+const POLL=Math.max(1000,+CONF.poll||30000);
+class AppErr extends Error{constructor(code,msg){super(msg||code);this.code=code}}
+const normMat=m=>String(m||'').trim().toLowerCase().replace(/\s+/g,'');
+const okMat=m=>/^[a-z0-9._-]{2,40}$/.test(m);
+let B=null,ME=null,UL=null,entered=false,syncOn=false,synced0=false,pollT=0,pendT=0,cursor=0,netDown=false,lastPull=0,tplChk=0,tplVer='',FZ=null;
+const AU={st:MODE==='local'?'in':'boot',err:'',tab:'in',busy:false,f:{nome:'',mat:''}};
+const isAdm=()=>!!ME&&ME.role==='admin'&&ME.status==='ativo';
+const pendN=()=>(UL||[]).filter(u=>u.status==='pendente').length;
+const ERRM={cred:'Matrícula ou senha incorretas.',exists:'Esta matrícula já tem cadastro. Use “Entrar”.',weak:'Senha fraca: use pelo menos 6 caracteres.',net:'Sem conexão com o banco.',many:'Muitas tentativas. Aguarde alguns minutos e tente de novo.',
+  denied:'O banco recusou o acesso. Confira se as regras de segurança foram publicadas.',auth:'Sua sessão expirou. Entre de novo.','setup-auth':'O login por e-mail/senha não está ativado no Firebase (Authentication → Método de login).',
+  'setup-key':'A configuração do banco (config.js) está incorreta.','setup-db':'O banco Firestore ainda não foi criado neste projeto.',quota:'O banco atingiu o limite do plano por hoje. Tente mais tarde ou fale com o administrador.',
+  'too-big':'Um registro ficou grande demais para o banco.',server:'O servidor do banco não respondeu como esperado.',notfound:'Não encontrado.',self:'Você não pode mudar o próprio acesso.',last:'O app precisa de pelo menos um administrador ativo.'};
+const msgErr=(e,first)=>e&&e.code==='net'&&first?'Sem conexão. Para entrar neste aparelho pela primeira vez, é preciso internet.':ERRM[e&&e.code]||('Erro inesperado: '+((e&&e.message)||e));
+const u8b64=u=>{let s='';for(let k=0;k<u.length;k+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(k,k+0x8000));return btoa(s)};
+const tplPack=T=>{const parts={};for(const [n,v] of Object.entries(T.parts||{}))parts[n]=typeof v==='string'?v:{b64:u8b64(v)};return{name:T.name,rev:T.rev||'',ver:T.ver||'',em:T.em||0,parts}};
+const tplUnpack=P=>{const parts={};for(const [n,v] of Object.entries((P&&P.parts)||{}))parts[n]=typeof v==='string'?v:v&&v.b64?b64u8(','+v.b64):'';return{name:P.name,rev:P.rev||'',ver:P.ver||'',em:P.em||0,parts}};
+
+/* servidor da TI: API REST descrita em servidor-ti/API.md */
+function mkApi(base){base=String(base).replace(/\/+$/,'');let tok=null;
+  const call=async(method,p,body)=>{let r;
+    try{r=await fetch(base+p,{method,headers:Object.assign(body!==undefined?{'Content-Type':'application/json'}:{},tok?{Authorization:'Bearer '+tok}:{}),body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',credentials:'omit'})}catch(e){throw new AppErr('net')}
+    let j=null;try{j=await r.json()}catch(e){}
+    if(!r.ok)throw new AppErr((j&&j.code)||({401:'auth',403:'denied',404:'notfound',409:'exists',413:'too-big',429:'many'})[r.status]||'server',j&&j.msg);
+    return j||{}};
+  const keep=async j=>{tok=j.token;await IDB.put('meta','tok',{bk:BK,t:tok,uid:j.user.uid});return j.user};
+  const P=s=>encodeURIComponent(s);
+  return{caps:{resetPw:true},
+    async init(){const s=await IDB.get('meta','tok');if(!s||s.bk!==BK||!s.t)return null;tok=s.t;return s.uid},
+    login:(mat,senha)=>call('POST','/login',{mat,senha}).then(keep),
+    register:(nome,mat,senha)=>call('POST','/register',{nome,mat,senha}).then(keep),
+    async logout(){try{await call('POST','/logout')}catch(e){}tok=null;await IDB.del('meta','tok')},
+    me:()=>call('GET','/me').then(j=>j.user),
+    users:()=>call('GET','/users').then(j=>j.users||[]),
+    setUser:(uid,p)=>call('PATCH','/users/'+P(uid),p),
+    delUser:uid=>call('DELETE','/users/'+P(uid)),
+    resetPw:(uid,senha)=>call('PATCH','/users/'+P(uid),{senha}),
+    async pull(c){const out=[];let cur=+c||0;for(let g=0;g<60;g++){const j=await call('GET','/docs?since='+cur);out.push(...(j.docs||[]));cur=Math.max(cur,+j.cursor||0);if(!j.more)break}return{docs:out,cursor:cur}},
+    push:list=>call('POST','/docs',{docs:list}),
+    getFoto:id=>call('GET','/fotos/'+P(id)).catch(e=>{if(e.code==='notfound')return null;throw e}),
+    putFoto:(id,r)=>call('PUT','/fotos/'+P(id),r),
+    delFoto:id=>call('DELETE','/fotos/'+P(id)).catch(e=>{if(e.code!=='notfound')throw e}),
+    modeloInfo:()=>call('GET','/modelo/info').catch(e=>{if(e.code==='notfound')return null;throw e}),
+    getModelo:()=>call('GET','/modelo'),
+    putModelo:T=>call('PUT','/modelo',T)}}
+
+/* Firebase: Authentication (e-mail/senha, com a matrícula no lugar do e-mail) + Firestore. Regras em firestore.rules */
+function mkFb(cfg){let F=null,auth=null,db=null,uid=null;const mail=m=>m+'@matricula.example.com';
+  const E=e=>{if(e instanceof AppErr)return e;const c=String((e&&e.code)||'').replace(/^(auth|firestore)\//,'');
+    return new AppErr(['invalid-credential','wrong-password','user-not-found','invalid-login-credentials','invalid-email','user-disabled'].includes(c)?'cred':c==='email-already-in-use'?'exists':c==='weak-password'||c==='password-does-not-meet-requirements'?'weak':
+      ['network-request-failed','unavailable','deadline-exceeded'].includes(c)?'net':c==='too-many-requests'?'many':c==='permission-denied'||c==='unauthenticated'?'denied':c==='operation-not-allowed'||c==='admin-restricted-operation'?'setup-auth':
+      /api-key|invalid-app-id|app-not-authorized|configuration-not-found|project-not-found/.test(c)?'setup-key':c==='not-found'?'setup-db':c==='resource-exhausted'?'quota':c==='invalid-argument'?'too-big':'server',(e&&e.message)||c)};
+  const T=async f=>{try{return await f()}catch(e){throw E(e)}};
+  const prof=async()=>{const s=await F.getDoc(F.doc(db,'users',uid));if(!s.exists())return null;const d=s.data();return{uid,mat:d.mat,nome:d.nome,role:d.role,status:d.status}};
+  async function mkProf(nome,mat){let first=!(await F.getDoc(F.doc(db,'config','admin'))).exists();
+    for(let k=0;k<2;k++){const p={mat,nome,role:first?'admin':'user',status:first?'ativo':'pendente',criado:F.serverTimestamp()},b=F.writeBatch(db);b.set(F.doc(db,'users',uid),p);if(first)b.set(F.doc(db,'config','admin'),{uid});
+      try{await b.commit();return{uid,mat,nome,role:p.role,status:p.status}}catch(e){if(first&&/permission/.test(String(e.code))){first=false;continue}throw e}}}
+  const ensure=async(nome,mat)=>{const p=await prof();if(p)return p;const m=mat||String((auth.currentUser&&auth.currentUser.email)||'').split('@')[0];return mkProf(nome||m,m)};
+  const pq=c=>[F.where('ts','>',F.Timestamp.fromMillis(Math.max(0,(+c||0)-2000))),F.orderBy('ts')];
+  return{caps:{resetPw:false},
+    async init(){try{F=await import('./firebase.js')}catch(e){throw new AppErr('net','Não foi possível carregar o módulo do Firebase.')}
+      try{const app=F.initializeApp(cfg);auth=F.initializeAuth(app,{persistence:[F.indexedDBLocalPersistence,F.browserLocalPersistence]});db=F.getFirestore(app)}catch(e){throw new AppErr('setup-key',e&&e.message)}
+      const u=await new Promise(ok=>{const off=F.onAuthStateChanged(auth,x=>{off();ok(x)},()=>ok(null))});uid=u?u.uid:null;return uid},
+    login:(mat,senha)=>T(async()=>{const c=await F.signInWithEmailAndPassword(auth,mail(mat),senha);uid=c.user.uid;return ensure('',mat)}),
+    register:(nome,mat,senha)=>T(async()=>{const c=await F.createUserWithEmailAndPassword(auth,mail(mat),senha);uid=c.user.uid;return ensure(nome,mat)}),
+    logout:()=>T(async()=>{await F.signOut(auth);uid=null}),
+    me:()=>T(()=>ensure()),
+    users:()=>T(async()=>(await F.getDocs(F.collection(db,'users'))).docs.map(x=>{const d=x.data();return{uid:x.id,mat:d.mat,nome:d.nome,role:d.role,status:d.status}})),
+    setUser:(id,p)=>T(()=>F.updateDoc(F.doc(db,'users',id),p)),
+    delUser:id=>T(()=>F.deleteDoc(F.doc(db,'users',id))),
+    pull:c=>T(async()=>{const out=[];let mx=+c||0,last=null;
+      for(let g=0;g<60;g++){const s=await F.getDocs(F.query(F.collection(db,'docs'),...pq(c),...(last?[F.startAfter(last)]:[]),F.limit(300)));
+        for(const x of s.docs){const d=x.data(),t=d.ts&&d.ts.toMillis?d.ts.toMillis():0;if(t>mx)mx=t;out.push({id:x.id,kind:d.kind,j:d.j,updated:+d.updated||0,del:!!d.del})}
+        if(s.docs.length<300)break;last=s.docs[s.docs.length-1]}
+      return{docs:out,cursor:mx}}),
+    push:list=>T(async()=>{const b=F.writeBatch(db);for(const r of list)b.set(F.doc(db,'docs',r.id),{kind:r.kind||'',j:r.j||'',updated:+r.updated||0,del:!!r.del,by:uid,byNome:(ME&&ME.nome)||'',ts:F.serverTimestamp()});await b.commit()}),
+    getFoto:id=>T(async()=>{const s=await F.getDoc(F.doc(db,'fotos',id));if(!s.exists())return null;const d=s.data();return{data:d.data,w:+d.w||0,h:+d.h||0}}),
+    putFoto:(id,r)=>T(()=>F.setDoc(F.doc(db,'fotos',id),{data:r.data,w:+r.w||0,h:+r.h||0,by:uid,ts:F.serverTimestamp()})),
+    delFoto:id=>T(()=>F.deleteDoc(F.doc(db,'fotos',id))),
+    modeloInfo:()=>T(async()=>{const s=await F.getDoc(F.doc(db,'config','modeloInfo'));return s.exists()?s.data():null}),
+    getModelo:()=>T(async()=>{const s=await F.getDoc(F.doc(db,'config','modelo'));if(!s.exists())throw new AppErr('notfound');return JSON.parse(s.data().j)}),
+    putModelo:P=>T(async()=>{const b=F.writeBatch(db);b.set(F.doc(db,'config','modelo'),{j:JSON.stringify(P)});b.set(F.doc(db,'config','modeloInfo'),{ver:P.ver,name:P.name,em:P.em||Date.now()});await b.commit()})}}
+
+/* ---------- sincronização: envia o que mudou aqui e busca só o que mudou no banco ---------- */
+function updSt(net){if(net!==undefined)netDown=!!net;if(MODE==='local'){st('Salvo neste aparelho');return}if(AU.st!=='in'){st('');return}
+  const n=dirty.size;st(n?(netDown?`Sem conexão — ${n} pendente${n>1?'s':''}`:'Sincronizando…'):lastErr||(netDown?'Sem conexão — tudo salvo no aparelho':synced0?'Sincronizado':'Sincronizando…'))}
 function saveLS(){const a=[...docs.values()];try{localStorage.setItem(LSK,JSON.stringify(a))}catch(e){try{localStorage.setItem(LSK,JSON.stringify(a.map(o=>o.kind==='anom'?{...o,fotos:o.fotos.map(f=>({...f,t:''}))}:o)))}catch(e2){}}}
-function saveMeta(){IDB.put('meta','sync',{dirty:[...dirty],known:[...known]})}
+function saveMeta(){IDB.put('meta','sync',{dirty:[...dirty]})}
 function mark(id,op){dirty.set(id,{op,v:++seq});saveMeta()}
 function later(ms){clearTimeout(ft);ft=setTimeout(flush,ms);if(!flushing)updSt()}
-function persist(o){o.updated=Date.now();docs.set(o.id,o);IDB.put('docs',o.id,o);if(!idbOK)saveLS();mark(o.id,'d');later(800)}
+function persist(o){o.updated=Date.now();if(ME&&MODE!=='local'){const w={uid:ME.uid,nome:ME.nome};if(!o.cri)o.cri=w;o.alt=w}docs.set(o.id,o);IDB.put('docs',o.id,o);if(!idbOK)saveLS();mark(o.id,'d');later(800)}
 function rmDoc(id){docs.delete(id);IDB.del('docs',id);if(!idbOK)saveLS();mark(id,'x');later(500)}
 async function flush(){
-  if(flushing||!col){updSt();return}
-  flushing=true;lastErr='';let net=false;
-  for(const [id,e] of [...dirty]){
-    try{
-      if(e.op==='d'){const o=docs.get(id);if(o)await col.doc(id).set(clone(o));known.add(id)}
-      else if(e.op==='x'){await col.doc(id).delete();known.delete(id)}
-      else if(e.op==='f'){const f=await fLocal(id);if(f)await fcol.doc(id).set({data:f.data,w:f.w||0,h:f.h||0})}
-      else if(e.op==='xf')await fcol.doc(id).delete();
-      const c=dirty.get(id);if(c&&c.v===e.v)dirty.delete(id);
-    }catch(err){const c=err&&err.code;
-      if(c==='invalid_argument'||c==='quota_exceeded'){const x=dirty.get(id);if(x&&x.v===e.v)dirty.delete(id);lastErr=c==='quota_exceeded'?'Nuvem cheia — exporte e exclua inspeções antigas':'Um item não coube na nuvem'}
-      else{net=true;break}}
-  }
+  if(flushing||!syncOn||!B){updSt();return}
+  flushing=true;lastErr='';let net=false,stop=null;
+  const ent=[...dirty],fo=ent.filter(([,e])=>e.op==='f'||e.op==='xf'),dc=ent.filter(([,e])=>e.op==='d'||e.op==='x');
+  const done=(id,e)=>{const c=dirty.get(id);if(c&&c.v===e.v)dirty.delete(id)};
+  const rec=([id,e])=>{const o=docs.get(id);return e.op==='d'&&o?{id,kind:o.kind,j:JSON.stringify(o),updated:o.updated||Date.now(),del:false}:{id,kind:'',j:'',updated:Date.now(),del:true}};
+  try{
+    for(const [id,e] of fo){   /* fotos primeiro: quando o item chega no outro aparelho, as fotos já estão no banco */
+      try{if(e.op==='f'){const f=await fLocal(id);if(f)await B.putFoto(id,{data:f.data,w:f.w||0,h:f.h||0})}else await B.delFoto(id)}
+      catch(err){if(err.code!=='too-big')throw err;lastErr='Uma foto ficou grande demais para o banco'}
+      done(id,e);updSt()}
+    for(let k=0;k<dc.length;k+=20){const ch=dc.slice(k,k+20);
+      try{await B.push(ch.map(rec))}catch(err){if(err.code!=='too-big')throw err;for(const x of ch){try{await B.push([rec(x)])}catch(e2){if(e2.code!=='too-big')throw e2;lastErr='Um item ficou grande demais para o banco'}}}
+      ch.forEach(([id,e])=>done(id,e));saveMeta()}
+  }catch(err){if(err.code==='denied'||err.code==='auth')stop=err;else{if(err.code==='quota')lastErr=ERRM.quota;net=true}}
   flushing=false;saveMeta();
+  if(stop){accessLost(stop);return}
   if(dirty.size){clearTimeout(ft);ft=setTimeout(flush,net?20000:400)}
-  updSt(net);
-}
-addEventListener('online',()=>later(200));
+  updSt(net)}
+addEventListener('online',()=>{if(syncOn){later(200);pull()}});
+function applyRemote(L){let ch=false;
+  for(const r of L){if(!r||!okId(r.id)||dirty.has(r.id))continue;const l=docs.get(r.id);
+    if(r.del){if(l){docs.delete(r.id);IDB.del('docs',r.id);(l.kind==='anom'?l.fotos:l.kind==='insp'?l.gerais:[]).forEach(f=>{fmem.delete(f.id);IDB.del('fotos',f.id)});ch=true}continue}
+    let o=null;try{o=norm(Object.assign(JSON.parse(r.j),{id:r.id}))}catch(e){}
+    if(o&&(!l||o.updated>l.updated)){docs.set(o.id,o);IDB.put('docs',o.id,o);ch=true}}
+  if(ch){if(!idbOK)saveLS();onRemote()}}
+async function pull(){if(!syncOn||!B)return;clearTimeout(pollT);
+  try{const r=await B.pull(cursor);if(!syncOn)return;applyRemote(r.docs);if(r.cursor>cursor){cursor=r.cursor;IDB.put('meta','cursor',{bk:BK,v:cursor})}netDown=false;synced0=true;lastPull=Date.now();
+    if(Date.now()-tplChk>6e5)checkTpl()}
+  catch(e){if(e.code==='denied'||e.code==='auth'){accessLost(e);return}netDown=true}
+  updSt();if(syncOn)pollT=setTimeout(pull,document.hidden?POLL*4:POLL)}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&syncOn&&Date.now()-lastPull>Math.min(POLL/2,10000))pull()});
+async function startSync(){if(syncOn||!B)return;syncOn=true;synced0=false;
+  const c=await IDB.get('meta','cursor');
+  if(!c||c.bk!==BK){cursor=0;const fids=new Set();   /* primeira vez deste aparelho neste banco: envia o que só existe aqui */
+    for(const o of docs.values()){if(!dirty.has(o.id))mark(o.id,'d');for(const f of (o.kind==='insp'?o.gerais:o.kind==='anom'?o.fotos:[]))fids.add(f.id)}
+    for(const id of fids)if(!dirty.has(id)&&await fLocal(id))mark(id,'f');
+    IDB.put('meta','cursor',{bk:BK,v:0})}
+  else cursor=+c.v||0;
+  updSt();pull();later(600)}
+function stopSync(){syncOn=false;clearTimeout(pollT);clearTimeout(ft)}
+async function accessLost(e){stopSync();
+  if(e.code==='auth'){AU.st='out';AU.err=ERRM.auth;ME=null;entered=false;render();return}
+  try{const p=await B.me();if(p&&p.status==='ativo'){lastErr=ERRM.denied;updSt();setTimeout(()=>{if(AU.st==='in'&&!syncOn)startSync()},60000);return}setMe(p)}
+  catch(x){if(x.code==='auth'){AU.st='out';ME=null;entered=false;render()}else{lastErr=msgErr(e);updSt()}}}
+
+/* ---------- conta ---------- */
+function setMe(p){if(!p)return;ME={uid:p.uid,mat:p.mat,nome:p.nome,role:p.role,status:p.status,bk:BK};IDB.put('meta','me',ME);
+  if(ME.status==='ativo'){const was=AU.st;AU.st='in';if(!entered)enter();else if(was!=='in')render();else if(!S.ed&&S.view==='list')vList()}
+  else{stopSync();AU.st='pend';entered=false;render()}}
+async function enter(){entered=true;AU.err='';AU.busy=false;render();await teamTpl();if(AU.st!=='in')return;await restoreUI();if(AU.st!=='in')return;startSync();if(isAdm())loadUsers()}
+async function boot(){
+  try{B=MODE==='firebase'?mkFb(CONF.firebase):mkApi(CONF.api.url)}catch(e){B=null}
+  let uid=null;try{uid=B&&await B.init()}catch(e){AU.err=msgErr(e)}
+  if(!uid){AU.st='out';render();return}
+  const cm=await IDB.get('meta','me');
+  if(cm&&cm.uid===uid&&cm.bk===BK){ME=cm;if(ME.status==='ativo'){AU.st='in';enter()}else{AU.st='pend';render()}}
+  else{AU.st='boot';render()}
+  try{setMe(await B.me())}catch(e){if(e.code==='auth'){AU.st='out';ME=null;entered=false;render()}else if(!ME){AU.st='out';AU.err=msgErr(e,1);render()}}}
+async function doAuth(form){if(AU.busy||!B)return;const f=new FormData(form),up=AU.tab==='up',mat=normMat(f.get('mat')),senha=String(f.get('senha')||''),nome=String(f.get('nome')||'').trim().replace(/\s+/g,' ');
+  AU.f={nome,mat};const bad=m=>{AU.err=m;vLogin()};
+  if(up&&nome.length<3)return bad('Escreva o nome completo.');
+  if(!okMat(mat))return bad('Matrícula inválida: use só letras, números, ponto, hífen ou sublinhado (2 a 40).');
+  if(senha.length<6)return bad('A senha precisa ter pelo menos 6 caracteres.');
+  if(up&&senha!==String(f.get('senha2')||''))return bad('As senhas não conferem.');
+  AU.busy=true;AU.err='';vLogin();
+  try{const p=up?await B.register(nome,mat,senha):await B.login(mat,senha);AU.busy=false;AU.f={nome:'',mat:''};
+    if(p&&p.role==='admin'&&up)st('Você é o primeiro cadastro: virou administrador(a)');setMe(p)}
+  catch(e){AU.busy=false;AU.err=msgErr(e,1);vLogin()}}
+async function doLogout(t){if(dirty.size&&!S.outArm){S.outArm=true;render();return}S.outArm=false;t&&(t.disabled=true);
+  stopSync();try{await B.logout()}catch(e){}
+  ME=null;UL=null;entered=false;AU.st='out';AU.err='';AU.tab='in';
+  docs.clear();dirty.clear();fmem.clear();await Promise.all(['docs','fotos'].map(IDB.clr));
+  for(const k of ['sync','me','cursor','nav','draft','pend','tplTeam','tok'])await IDB.del('meta',k);
+  try{localStorage.removeItem(LSK)}catch(e){}
+  TPL=null;CFG=null;tplVer='';S.view='list';S.cur=null;restored=false;render()}
+async function recheck(){if(!B)return;try{setMe(await B.me())}catch(e){st(msgErr(e))}}
+async function loadUsers(){if(!isAdm()||!B)return;try{UL=(await B.users()).sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt'))}catch(e){}
+  if(!S.ed&&AU.st==='in'&&(S.view==='users'||S.view==='list'))render()}
+async function userAct(t){const a=t.dataset.ua,uid=t.dataset.uid,u=(UL||[]).find(x=>x.uid===uid);if(!u||!isAdm())return;
+  if(uid===ME.uid){st(ERRM.self);return}
+  if(['desativar','user'].includes(a)&&u.role==='admin'&&(UL||[]).filter(x=>x.role==='admin'&&x.status==='ativo').length<2){st(ERRM.last);return}
+  if(['recusar','desativar','remover'].includes(a)&&S.uArm!==a+uid){S.uArm=a+uid;vUsers();return}S.uArm='';
+  if(a==='senha'){S.pwFor=S.pwFor===uid?'':uid;vUsers();return}
+  t.disabled=true;
+  try{if(a==='ativar')await B.setUser(uid,{status:'ativo'});else if(a==='recusar'||a==='desativar')await B.setUser(uid,{status:'inativo'});else if(a==='admin')await B.setUser(uid,{role:'admin'});else if(a==='user')await B.setUser(uid,{role:'user'});else if(a==='remover')await B.delUser(uid);
+    st(a==='ativar'?`${u.nome} liberado(a)`:'Acesso atualizado')}catch(e){st(msgErr(e))}
+  await loadUsers()}
+
+/* ---------- modelo do relatório guardado no banco (só para logins ativos) ---------- */
+async function teamTpl(){if(!CFG){const c=await IDB.get('meta','tplTeam');if(c&&c.bk===BK&&c.T){try{const T=tplUnpack(c.T);CFG=parseCfg(T);TPL=T;tplVer=c.ver||''}catch(e){CFG=null}}}
+  tplBusy=!CFG;if(!CFG)render();const p=checkTpl();if(!CFG)await p}
+async function checkTpl(){if(!B)return;tplChk=Date.now();
+  try{const info=await B.modeloInfo();
+    if(!info){if(isAdm()&&!CFG){const u=await IDB.get('meta','tplUser');if(u&&u.parts){try{await putTeamTpl(u);st('O modelo deste aparelho foi enviado para a equipe')}catch(e){}}}}
+    else if(info.ver!==tplVer||!CFG){const T=tplUnpack(await B.getModelo()),c=parseCfg(T);TPL=T;CFG=c;tplVer=info.ver;IDB.put('meta','tplTeam',{bk:BK,ver:info.ver,T:tplPack(T)});tplErr='';if(!S.ed&&AU.st==='in')render()}}
+  catch(e){if(!CFG)tplErr=e.code==='net'?'Sem conexão para baixar o modelo do relatório. Conecte-se e abra o app de novo.':'Não foi possível carregar o modelo do relatório. '+msgErr(e)}
+  const was=tplBusy;tplBusy=false;if(was&&!CFG&&AU.st==='in')render()}
+async function putTeamTpl(T){const P=tplPack(Object.assign({},T,{ver:nid(),em:Date.now()}));await B.putModelo(P);TPL=tplUnpack(P);CFG=parseCfg(TPL);tplVer=P.ver;IDB.put('meta','tplTeam',{bk:BK,ver:P.ver,T:P});tplErr=''}
+
 
 /* ---------- fotos ---------- */
 function normF(f){if(!f||typeof f!=='object'||!okId(f.id))return null;return{id:f.id,w:+f.w||0,h:+f.h||0,t:okImg(f.t)?f.t:'',leg:typeof f.leg==='string'?f.leg:'',ts:+f.ts||0}}
 function putPhoto(id,rec){fmem.set(id,rec);IDB.put('fotos',id,rec).then(ok=>{if(ok&&fmem.get(id)===rec)fmem.delete(id)});mark(id,'f');later(800)}
 async function fLocal(id){if(fmem.has(id))return fmem.get(id);const r=await IDB.get('fotos',id);return r&&okImg(r.data)?r:null}
-async function getPhoto(id){const l=await fLocal(id);if(l)return l;if(!fcol)return null;
-  try{const s=await fcol.doc(id).get();const v=s.exists&&s.data();if(v&&okImg(v.data)){const r={data:v.data,w:+v.w||0,h:+v.h||0};if(!(await IDB.put('fotos',id,r)))fmem.set(id,r);return r}}catch(e){}return null}
+async function getPhoto(id){const l=await fLocal(id);if(l)return l;if(!B||AU.st!=='in')return null;
+  try{const v=await B.getFoto(id);if(v&&okImg(v.data)){const r={data:v.data,w:+v.w||0,h:+v.h||0};if(!(await IDB.put('fotos',id,r)))fmem.set(id,r);return r}}catch(e){}return null}
 function dropPhoto(id){fmem.delete(id);IDB.del('fotos',id);mark(id,'xf');later(800)}
 const loadImg=src=>new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=src});
 function enc(im,max,q){const W=im.naturalWidth||im.videoWidth||im.width,H=im.naturalHeight||im.videoHeight||im.height,r=Math.min(1,max/Math.max(W,H)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(W*r));c.height=Math.max(1,Math.round(H*r));const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);const o={data:c.toDataURL('image/jpeg',q),w:c.width,h:c.height};c.width=c.height=0;return o}
@@ -362,19 +538,80 @@ addEventListener('appinstalled',()=>{BIP=null;if(S.view==='list'&&!S.ed)vList()}
 const isInst=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}};
 const isIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 function instHTML(){if(!SA||instNo||isInst()||!document.querySelector('link[rel=manifest]'))return'';
-  const t=isIOS()?'No Safari, toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>. Use sempre o ícone “Inspeção”: no iPhone ele guarda os dados separado do Safari, então carregue o modelo já pelo ícone.'
+  const t=isIOS()?'No Safari, toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>. Use sempre o ícone “Inspeção”: no iPhone ele guarda os dados separado do Safari, então '+(MODE==='local'?'carregue o modelo':'entre com a matrícula')+' já pelo ícone.'
     :BIP?'Fica um ícone na tela inicial, abre em tela cheia e funciona sem internet.':'No menu do navegador (⋮), toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>. Fica um ícone, abre em tela cheia e funciona sem internet.';
   return `<div class="inst"><b>Instale o app neste celular</b><p>${t}</p><div class="row">${BIP?'<button class="btn pri sm" data-a="inst">Instalar app</button>':''}<button class="btn sm" data-a="instno">Agora não</button></div></div>`}
+/* ---------- telas de acesso ---------- */
+function vBoot(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;st('');$('#main').innerHTML='<div class="empty"><p><b>Abrindo…</b></p></div>'}
+function vLogin(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;st('');const up=AU.tab==='up',f=AU.f;
+  $('#main').innerHTML=`<div class="auth">
+  <div class="ahero">${frameSVG(3)}<p class="mut">Relatório de inspeção estrutural em campo, com fotos, no modelo da empresa.</p></div>
+  ${instHTML()}
+  <div class="seg2" role="tablist" aria-label="Acesso"><button role="tab" data-atab="in" aria-selected="${!up}" aria-pressed="${!up}">Entrar</button><button role="tab" data-atab="up" aria-selected="${up}" aria-pressed="${up}">Criar cadastro</button></div>
+  <form id="fauth" class="aform" novalidate>
+   ${up?`<label class="f w"><span>Nome completo</span><input name="nome" autocomplete="name" autocapitalize="words" value="${esc(f.nome)}" required></label>`:''}
+   <label class="f w"><span>Matrícula</span><input name="mat" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" value="${esc(f.mat)}" required></label>
+   <label class="f w"><span>Senha</span><input name="senha" type="password" autocomplete="${up?'new-password':'current-password'}" minlength="6" required></label>
+   ${up?'<label class="f w"><span>Confirmar senha</span><input name="senha2" type="password" autocomplete="new-password" minlength="6" required></label>':''}
+   <button class="btn pri" type="submit" ${AU.busy||!B?'disabled':''}>${AU.busy?(up?'Criando cadastro…':'Entrando…'):(up?'Criar cadastro':'Entrar')}</button>
+   ${AU.err?`<p class="aerr" role="alert">${esc(AU.err)}</p>`:''}
+  </form>
+  <p class="note">${up?'O cadastro fica aguardando a liberação de um administrador. O primeiro cadastro do app vira administrador.':'Esqueceu a senha? Fale com o administrador do app.'}</p></div>`}
+function vPend(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;st('');const ina=ME&&ME.status==='inativo';
+  $('#main').innerHTML=`<div class="auth"><div class="empty"><p><b>${ina?'Acesso desativado':'Cadastro aguardando liberação'}</b></p>${ME?`<p class="mut">${esc(ME.nome)} · matrícula ${esc(ME.mat)}</p>`:''}
+  <p>${ina?'Seu acesso a este app está desativado. Fale com o administrador.':'Seu cadastro foi enviado. Assim que um administrador liberar, o app abre sozinho.'}</p>
+  <div class="row" style="justify-content:center"><button class="btn pri" data-a="recheck">Verificar de novo</button><button class="btn" data-a="sair">Sair</button></div></div></div>`;
+  clearTimeout(pendT);pendT=setTimeout(()=>{if(AU.st==='pend'&&!document.hidden)recheck()},20000)}
+const whoHTML=()=>MODE==='local'||!ME?'':`<div class="who"><span class="wn">${IC.user}<span><b>${esc(ME.nome)}</b><small>Matrícula ${esc(ME.mat)}${isAdm()?' · administrador':''}</small></span></span>
+  ${isAdm()?`<button class="btn sm" data-a="users">Usuários${pendN()?`<span class="ct">${pendN()}</span>`:''}</button>`:''}<button class="btn sm${S.outArm?' del':''}" data-a="sair">${S.outArm?'Sair mesmo assim':'Sair'}</button></div>
+  ${S.outArm?`<p class="aerr">${pl(dirty.size,'alteração ainda não foi enviada','alterações ainda não foram enviadas')} ao banco. Se sair agora, ela${dirty.size>1?'s':''} se perde${dirty.size>1?'m':''}. Conecte-se à internet e espere aparecer “Sincronizado”.</p>`:''}
+  ${isAdm()&&pendN()?`<button class="inst ilink" data-a="users"><b>${pl(pendN(),'cadastro aguardando','cadastros aguardando')} liberação</b><span>Toque para ver e liberar.</span></button>`:''}`;
+function vUsers(){$('#ttl').textContent='Usuários e acessos';$('#back').hidden=false;
+  if(!isAdm()){S.view='list';return vList()}
+  const U=UL||[],grp=[['pendente','Aguardando liberação'],['ativo','Ativos'],['inativo','Desativados']];
+  const btn=(a,u,l,c)=>`<button class="btn sm${c?' '+c:''}" data-ua="${a}" data-uid="${esc(u.uid)}">${S.uArm===a+u.uid?'Toque de novo':l}</button>`;
+  const row=u=>{const me=u.uid===ME.uid;return `<div class="urow"><div class="ui"><b>${esc(u.nome||'—')}</b><small>Matrícula ${esc(u.mat||'—')}${u.role==='admin'?' · administrador':''}${me?' · você':''}</small></div><div class="row">${me?'':
+      u.status==='pendente'?btn('ativar',u,'Liberar','pri')+btn('recusar',u,'Recusar','del'):
+      u.status==='ativo'?btn(u.role==='admin'?'user':'admin',u,u.role==='admin'?'Tirar administrador':'Tornar administrador')+(B&&B.caps.resetPw?btn('senha',u,'Nova senha'):'')+btn('desativar',u,'Desativar','del'):
+      btn('ativar',u,'Reativar')+btn('remover',u,'Remover cadastro','del')}</div>
+    ${S.pwFor===u.uid?`<form class="row pwf" data-pwf="${esc(u.uid)}"><input name="pw" type="password" minlength="6" autocomplete="new-password" placeholder="Nova senha (mín. 6)" aria-label="Nova senha para ${esc(u.nome)}"><button class="btn sm pri">Salvar senha</button></form>`:''}</div>`};
+  $('#main').innerHTML=`<h2>Usuários e acessos</h2>${UL?'':'<p class="mut">Carregando…</p>'}
+  ${grp.map(([s,t])=>{const L=U.filter(u=>u.status===s);return L.length?`<h3>${t} <span class="ct">${L.length}</span></h3>${L.map(row).join('')}`:''}).join('')}
+  <h3>Modelo do relatório</h3><section class="xl"><p style="margin:0"><b>${CFG?esc(CFG.name):'Nenhum modelo enviado'}</b></p>
+   <p class="mut" style="margin:4px 0 10px">${CFG?'Todos os usuários recebem este modelo automaticamente.':'Envie o arquivo .xlsx do modelo: ele fica guardado no banco e só abre para logins ativos.'}</p>
+   <label class="btn up${CFG?'':' pri'}">${CFG?'Enviar nova versão (.xlsx)':'Enviar modelo (.xlsx)'}<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-up="tpl"></label>${tplErr?`<p class="note">${esc(tplErr)}</p>`:''}</section>
+  <button class="btn sm" data-a="ureload" style="margin-top:16px">Atualizar lista</button>`}
+
+/* ---------- baixar as fotos de uma inspeção ---------- */
+const fsafe=s=>String(s||'').replace(/[\\/:*?"<>|\u0000-\u001f]+/g,' ').replace(/\s+/g,' ').trim().slice(0,60);
+async function fotosDe(i){const tag=fsafe(i.d.tag||'ativo'),L=[],A=anoms(i.id);
+  i.gerais.forEach((f,j)=>L.push({f,n:`${tag} - Geral ${j+1}${f.leg?' - '+fsafe(f.leg):''}`}));
+  A.forEach((a,k)=>a.fotos.forEach((f,j)=>L.push({f,n:`${tag} - Item ${String(k+1).padStart(2,'0')} - ${fsafe(a.loc||a.elem||a.manif||'item')} - foto ${j+1}${f.leg?' - '+fsafe(f.leg):''}`})));
+  const out=[],seen=new Set();let miss=0;
+  for(const x of L){const r=await getPhoto(x.f.id);if(!r){miss++;continue}let n=x.n.slice(0,150);for(let k=2;seen.has(n.toLowerCase());k++)n=x.n.slice(0,140)+' ('+k+')';seen.add(n.toLowerCase());
+    out.push(new File([b64u8(r.data)],n+'.jpg',{type:'image/jpeg'}))}
+  return{files:out,miss}}
+const zipName=i=>`Fotos - ${fsafe(i.d.tag||'inspecao')}${isDate(i.d.data)?' - '+i.d.data:''}.zip`;
+async function zipFotos(){if(!FZ)return;const i=docs.get(FZ.i);if(!i)return;
+  const z=await zipBlob(await Promise.all(FZ.files.map(async f=>({name:f.name,data:new Uint8Array(await f.arrayBuffer()),z:false}))));
+  try{await dl.save({filename:zipName(i),data:z});st('Fotos salvas (.zip)')}catch(e){st(dlErr(e))}}
+async function baixarFotos(i,btn){await busy(btn,'Juntando as fotos…',async()=>{const {files,miss}=await fotosDe(i),box=$('#fres');
+  if(!files.length){st(miss?'As fotos não estão neste aparelho e não há conexão para baixá-las':'Esta inspeção não tem fotos');return}
+  FZ={i:i.id,files,miss};let can=false;try{can=!!(navigator.share&&navigator.canShare&&navigator.canShare({files:files.slice(0,1)}))}catch(e){}
+  const info=`${pl(files.length,'foto pronta','fotos prontas')}${miss?` · ${pl(miss,'não pôde ser baixada agora','não puderam ser baixadas agora')}`:''}`;
+  if(can){if(box)box.innerHTML=`<div class="row"><button class="btn pri" data-a="fshare">Salvar no celular</button><button class="btn" data-a="fzip">Baixar .zip</button></div><p class="note">${info}. “Salvar no celular” abre o compartilhamento: no iPhone, escolha “Salvar imagens”.</p>`;st('Fotos prontas');return}
+  await zipFotos();if(box)box.innerHTML=`<div class="row"><button class="btn sm" data-a="fzip">Baixar .zip de novo</button></div><p class="note">${info}.</p>`})}
+
 function vList(){
   $('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;
   const L=insps(),na=[...docs.values()].filter(o=>o.kind==='anom').length;
-  $('#main').innerHTML=`<h2>Inspeções</h2>${instHTML()}
-  ${CFG?`<div class="hero">${frameSVG(na)}<div class="row sb"><span class="mut">Modelo: ${esc(CFG.name)}</span><button class="btn pri" data-a="nova">+ Nova inspeção</button></div></div>`:tplBusy?'<div class="empty"><p><b>Carregando o modelo do relatório…</b></p></div>':`<div class="empty"><p><b>Carregue o modelo do relatório (.xlsx)</b></p><p class="mut">Escolha o arquivo “Relatório de Inspeção Estrutural - rev1.xlsx”. Ele fica guardado neste aparelho e o app passa a usar as listas, os critérios e o layout dele.</p><label class="btn pri up">Escolher arquivo do modelo<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-up="tpl"></label>${tplErr?`<p class="note">${esc(tplErr)}</p>`:''}</div>`}
+  $('#main').innerHTML=`<h2>Inspeções</h2>${whoHTML()}${instHTML()}
+  ${CFG?`<div class="hero">${frameSVG(na)}<div class="row sb"><span class="mut">Modelo: ${esc(CFG.name)}</span><button class="btn pri" data-a="nova">+ Nova inspeção</button></div></div>`:tplBusy?`<div class="empty"><p><b>${MODE==='local'?'Carregando':'Baixando'} o modelo do relatório…</b></p></div>`:MODE!=='local'&&!isAdm()?`<div class="empty"><p><b>Aguardando o modelo do relatório</b></p><p class="mut">Um administrador precisa enviar o arquivo do modelo. Depois disso, ele chega aqui sozinho.</p>${tplErr?`<p class="note">${esc(tplErr)}</p>`:''}<button class="btn sm" data-a="tplchk">Verificar de novo</button></div>`:MODE!=='local'?`<div class="empty"><p><b>Envie o modelo do relatório (.xlsx)</b></p><p class="mut">Escolha o arquivo “Relatório de Inspeção Estrutural - rev1.xlsx”. Ele fica guardado no banco, só para logins ativos, e todos os usuários passam a recebê-lo automaticamente.</p><label class="btn pri up">Escolher arquivo do modelo<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-up="tpl"></label>${tplErr?`<p class="note">${esc(tplErr)}</p>`:''}</div>`:`<div class="empty"><p><b>Carregue o modelo do relatório (.xlsx)</b></p><p class="mut">Escolha o arquivo “Relatório de Inspeção Estrutural - rev1.xlsx”. Ele fica guardado neste aparelho e o app passa a usar as listas, os critérios e o layout dele.</p><label class="btn pri up">Escolher arquivo do modelo<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-up="tpl"></label>${tplErr?`<p class="note">${esc(tplErr)}</p>`:''}</div>`}
   ${CFG?(L.length?L.map(i=>{const s=sumOf(i),nf=s.A.reduce((n,a)=>n+a.fotos.length,0)+i.gerais.length,d=i.d;
-    return `<button class="card" data-open="${esc(i.id)}"><span class="cth" ${bg(i.gerais[0])}>${i.gerais.length?'':'sem foto'}</span><span class="cb"><b>${esc(d.tag||'Ativo sem TAG')}</b><span class="mut">${esc([d.tipo,d.unid].filter(Boolean).join(' · '))}</span><span class="mut">${esc([fdate(d.data),pl(s.A.length,'item','itens'),pl(nf,'foto','fotos')].filter(Boolean).join(' · '))}</span><span class="bds">${s.nivel?badge(CFG.calc.risk,s.nivel,'Risco '+s.pmax):''}${s.prio?badge(CFG.calc.gutp,s.prio,'GUT '+s.gmax):''}${s.venc?`<span class="bd pe">${pl(s.venc,'prazo vencido','prazos vencidos')}</span>`:''}</span></span></button>`}).join('')
+    return `<button class="card" data-open="${esc(i.id)}"><span class="cth" ${bg(i.gerais[0])}>${i.gerais.length?'':'sem foto'}</span><span class="cb"><b>${esc(d.tag||'Ativo sem TAG')}</b><span class="mut">${esc([d.tipo,d.unid].filter(Boolean).join(' · '))}</span><span class="mut">${esc([fdate(d.data),pl(s.A.length,'item','itens'),pl(nf,'foto','fotos'),MODE!=='local'&&i.cri?'por '+i.cri.nome:''].filter(Boolean).join(' · '))}</span><span class="bds">${s.nivel?badge(CFG.calc.risk,s.nivel,'Risco '+s.pmax):''}${s.prio?badge(CFG.calc.gutp,s.prio,'GUT '+s.gmax):''}${s.venc?`<span class="bd pe">${pl(s.venc,'prazo vencido','prazos vencidos')}</span>`:''}</span></span></button>`}).join('')
     :`<div class="empty"><p><b>Nenhuma inspeção ainda.</b></p><p class="mut">Comece uma em branco ou abra um exemplo preenchido para ver a planilha pronta.</p></div>`):''}
-  <h3>Mais opções</h3><div class="row"><button class="btn sm" data-a="ex" ${CFG?'':'disabled'}>Abrir exemplo</button><button class="btn sm" data-a="exp" ${dl?'':'hidden'}>Backup completo (com fotos)</button><button class="btn sm" data-a="imp">Restaurar backup</button>${CFG?'<label class="btn sm up">Trocar modelo (.xlsx)<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-up="tpl"></label>':''}</div>
-  ${!dlKnown?'':SA?'<p class="note">As inspeções ficam salvas só neste aparelho. Faça um backup completo de vez em quando — ele guarda também as fotos.</p>':'<p class="note">As inspeções ficam salvas na sua conta (privadas: só você vê) e sincronizam entre celular e computador. Sem sinal, tudo fica guardado neste aparelho e é enviado quando a conexão voltar.</p>'}`;
+  <h3>Mais opções</h3><div class="row">${MODE==='local'||isAdm()?`<button class="btn sm" data-a="ex" ${CFG?'':'disabled'}>Abrir exemplo</button>`:''}<button class="btn sm" data-a="exp" ${dl?'':'hidden'}>Backup completo (com fotos)</button>${MODE==='local'||isAdm()?'<button class="btn sm" data-a="imp">Restaurar backup</button>':''}${CFG&&MODE==='local'?'<label class="btn sm up">Trocar modelo (.xlsx)<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-up="tpl"></label>':''}</div>
+  ${MODE==='local'?'<p class="note">As inspeções ficam salvas só neste aparelho. Faça um backup completo de vez em quando — ele guarda também as fotos.</p>':'<p class="note">As inspeções ficam no banco da equipe e sincronizam entre os celulares e computadores de todos os usuários liberados. Sem sinal, tudo fica guardado neste aparelho e é enviado quando a conexão voltar.</p>'}`;
   hydrate($('#main'));
 }
 function vEdit(){
@@ -387,6 +624,7 @@ function vEdit(){
 const withCur=(opts,v)=>v===''||v==null||(opts||[]).some(o=>String(o)===String(v))?(opts||[]):[...(opts||[]),v];
 const optH=(opts,v)=>withCur(opts,v).map(o=>`<option${String(o)===String(v)?' selected':''}>${esc(o)}</option>`).join('');
 const HF=[['unid','sel'],['rt','txt'],['os','txt'],['data','date'],['tipo','sel'],['tag','txt'],['crit','sel'],['idade','num'],['projeto','sel'],['info','area']];
+const canDelI=i=>MODE==='local'||isAdm()||!i.cri||(ME&&i.cri.uid===ME.uid);
 function tDados(i){const d=i.d,L=CFG.L,H=CFG.hdrLab;
   const fld=([k,t])=>{const v=d[k]??'',lab=`<span>${esc(H[k])}</span>`;
     if(t==='sel'&&L[k])return `<label class="f"><span>${esc(H[k])}</span><select data-k="${k}"><option value="">—</option>${optH(L[k],v)}</select></label>`;
@@ -394,7 +632,7 @@ function tDados(i){const d=i.d,L=CFG.L,H=CFG.hdrLab;
     return `<label class="f">${lab}<input data-k="${k}" type="${t==='date'?'date':t==='num'?'number':'text'}" ${t==='num'?'inputmode="decimal" step="any" min="0"':''} value="${esc(v)}"></label>`};
   $('#tb').innerHTML=`<fieldset><legend>Dados gerais</legend><div class="grid">${HF.map(fld).join('')}</div></fieldset>
   <fieldset><legend>Fotos gerais do ativo <span class="mut">${i.gerais.length} de ${MAXG}</span></legend><div id="capa">${capaHTML(i)}</div></fieldset>
-  <h3>Excluir</h3><button class="btn del sm" data-a="delI">${S.delArm?'Toque de novo para excluir a inspeção, os itens e as fotos':'Excluir inspeção'}</button>`;
+  <h3>Excluir</h3>${canDelI(i)?`<button class="btn del sm" data-a="delI">${S.delArm?'Toque de novo para excluir a inspeção, os itens e as fotos':'Excluir inspeção'}</button>`:`<p class="note">Só quem criou a inspeção${i.cri?` (${esc(i.cri.nome)})`:''} ou um administrador pode excluí-la.</p>`}`;
   hydrate($('#tb'))}
 const capaHTML=i=>{const G=i.gerais;return `${G.length?`<div class="tiles">${G.map((f,j)=>`<div class="tile"><div class="im" ${bgFull(f)}><button data-rmg="${j}" aria-label="Remover foto geral ${j+1}">✕</button></div><input data-legg="${j}" value="${esc(f.leg)}" placeholder="Legenda" aria-label="Legenda da foto geral ${j+1}"></div>`).join('')}</div>`:'<p class="mut" style="margin-top:0">Vão para o quadro “Foto geral do ativo” da planilha, lado a lado.</p>'}
   ${G.length<MAXG?`<div class="cap">${camBtn('capa','Câmera')}<label class="btn up">${IC.img} Galeria (várias)<input type="file" accept="image/*" multiple data-up="capa"></label></div>`:''}`};
@@ -416,6 +654,8 @@ function tRel(i){
    <div class="row"><button class="btn${SA?'':' pri'}" data-a="xlsx" ${dl?'':'disabled'}>${IC.xl} ${SA?'Gerar planilha (.xlsx)':'Exportar planilha (.xlsx)'}</button></div><div id="xres"></div>
    ${dlKnown&&!dl?'<p class="note">O download não está disponível nesta visualização. Abra o app pelo link, no navegador.</p>':''}
    <p class="note">Preenche o arquivo “${esc(CFG.name)}”: dados gerais, foto geral do ativo e uma linha por item, com até ${MAXF} fotos no registro fotográfico (${pl(nf,'foto','fotos')} nesta inspeção). Pontuação, nível de risco, GUT, prioridade e prazo continuam como fórmulas do modelo, e o Resumo e os gráficos se atualizam ao abrir. As linhas que sobrarem ficam ocultas — é só reexibir para acrescentar itens.</p></section>
+  <section class="xl"><h3>Fotos da inspeção</h3><p class="mut" style="margin:0">${pl(nf,'foto','fotos')}: as gerais do ativo e as dos itens, com o número do item e a localização no nome do arquivo.</p>
+   <div class="row"><button class="btn" data-a="fotos" ${nf?'':'disabled'}>${IC.img} Baixar fotos</button></div><div id="fres"></div></section>
   <h3>Resumo</h3>
   <div class="sum"><div class="rb"><span class="mut">Nível de risco geral</span><span class="n">${s.pmax||'—'}</span>${s.nivel?badge(c.risk,s.nivel):''}</div><div class="rb"><span class="mut">Prioridade geral (GUT)</span><span class="n">${s.gmax||'—'}</span>${s.prio?badge(c.gutp,s.prio):''}</div>
    <div class="rb"><span class="mut">Próximo prazo de tratativa</span><span class="n" style="font-size:24px">${s.next?fdate(s.next):'—'}</span></div><div class="rb"><span class="mut">Tratativas vencidas</span><span class="n">${s.venc}</span></div></div>
@@ -447,14 +687,14 @@ function drawSheet(){
   ${a.fotos.length?`<div class="tiles">${a.fotos.map((f,j)=>`<div class="tile"><div class="im" ${bgFull(f)}><button data-rmf="${j}" aria-label="Remover foto ${j+1}">✕</button></div><input data-leg="${j}" value="${esc(f.leg)}" placeholder="Legenda" aria-label="Legenda da foto ${j+1}"></div>`).join('')}</div>`:''}
   ${a.fotos.length<MAXF?`<div class="cap">${camBtn('anom','Câmera')}<label class="btn up">${IC.img} Galeria (várias)<input type="file" accept="image/*" multiple data-up="anom"></label></div><p class="note">${canCam()?'A câmera fica aberta: tire as fotos em sequência e toque em Concluir.':'Toque em Câmera de novo para cada foto, ou escolha várias de uma vez na Galeria.'}</p>`:''}
   <section class="sec"><h3>Identificação e diagnóstico patológico</h3><div class="grid">
+   <label class="f w"><span>Localização</span><input data-ak="loc" value="${esc(a.loc)}" placeholder="Ex.: eixo 4, pilar P3, face norte, cota +12,0"></label>
    <label class="f"><span>${esc(lab.elem)}</span>${sel('elem',L.elem)}</label>
    <div class="f"><span>${esc(lab.mat)}</span>${seg('mat',L.mat||[])}</div>
    <label class="f w"><span>${esc(lab.manif)}</span>${sel('manif',manifL,a.mat?'—':'Escolha o material ou a manifestação')}</label>
    ${ct?`<div class="f w help"><p><b>Sintomas típicos:</b> ${esc(ct.sint)}</p><p><b>Mecanismos e causas prováveis:</b> ${esc(ct.causa)}</p>${ens.length?`<p style="margin-bottom:0"><b>Ensaios recomendados</b> (toque para usar):</p><div class="chips">${ens.map(e=>`<button class="chip" data-ens="${esc(e)}" aria-pressed="${a.ensaio===e}">${esc(e)}</button>`).join('')}</div>`:''}</div>`:''}
    <label class="f"><span>${esc(lab.causa)}</span>${sel('causa',L.causa)}</label>
    <label class="f"><span>${esc(lab.orig)}</span>${sel('orig',L.orig)}</label>
-   <label class="f w"><span>Localização</span><input data-ak="loc" value="${esc(a.loc)}" placeholder="Ex.: eixo 4, pilar P3, face norte, cota +12,0"></label>
-   <label class="f w"><span>Descrição</span><textarea data-ak="descr" placeholder="O que foi observado: extensão, abertura, dimensões…">${esc(a.descr)}</textarea><small>Na planilha, descrição e localização vão juntas na coluna “${esc(lab.descr)}”.</small></label>
+   <label class="f w"><span>Descrição</span><textarea data-ak="descr" placeholder="O que foi observado: extensão, abertura, dimensões…">${esc(a.descr)}</textarea><small>Na planilha, localização e descrição vão juntas na coluna “${esc(lab.descr)}”, com a localização primeiro.</small></label>
   </div></section>
   <section class="sec"><h3>Risco estrutural <small>CD × AF × função estrutural × vetor de impacto</small></h3>
    ${SPECIAL(a.manif)?'<p class="note">Para “'+esc(a.manif)+'”, a classificação de risco e a GUT não são obrigatórias.</p>':''}
@@ -473,6 +713,7 @@ function drawSheet(){
    <label class="f"><span>${esc(lab.qtd)}</span><input data-ak="qtd" type="number" inputmode="decimal" step="any" min="0" value="${esc(a.qtd)}"></label>
    <label class="f"><span>${esc(lab.unidq)}</span>${sel('unidq',L.unidq)}</label>
    <label class="f w"><span>${esc(lab.resp)}</span>${sel('resp',L.resp)}</label></div></section>
+  ${MODE!=='local'&&a.cri?`<p class="note">Registrado por ${esc(a.cri.nome)}${a.alt&&a.alt.uid!==a.cri.uid?` · última alteração por ${esc(a.alt.nome)}`:''}</p>`:''}
   ${isNew?'':`<div class="row" style="margin-top:18px"><button class="btn sm" data-a="dupA">Duplicar item</button><button class="btn sm del" data-a="delA">${S.delArm?'Toque de novo para excluir':'Excluir item'}</button></div>`}
   <div class="foot"><button class="btn pri" data-a="salvarA" style="flex:1 1 160px">Salvar item</button><button class="btn" data-a="fechar">Cancelar</button></div></div>`;
   hydrate($('#sheet'))}
@@ -581,7 +822,7 @@ async function buildXlsx(i){
   const names=['[Content_Types].xml',...Object.keys(P).filter(k=>k!=='[Content_Types].xml')];
   const blob=await zipBlob([...names.map(n=>({name:n,data:P[n],z:true})),...Object.keys(B).map(n=>({name:n,data:B[n]}))]);
   return{blob,miss,cut:All.length-A.length}}
-const joinDL=a=>{const d=a.descr.trim(),l=a.loc.trim();return d&&l?`${d}\nLocalização: ${l}`:l?`Localização: ${l}`:d};
+const joinDL=a=>{const d=a.descr.trim(),l=a.loc.trim();return d&&l?`Localização: ${l}\n${d}`:l?`Localização: ${l}`:d};
 const fname=i=>{const t=String(i.d.tag||'ativo').replace(/[\\/:*?"<>|]+/g,'-').trim().slice(0,60);return `Relatório de Inspeção Estrutural - ${t}${isDate(i.d.data)?' - '+i.d.data:''}.xlsx`};
 const dlErr=e=>{const c=e&&e.code;return c==='declined'?'Download cancelado':c==='host_unavailable'?'Este app não salva arquivos aqui — abra o link no navegador':c==='rate_limited'?'Aguarde e tente de novo':'Não foi possível salvar o arquivo'};
 async function busy(btn,label,fn){const old=btn.innerHTML;btn.disabled=true;btn.textContent=label;try{await fn()}finally{btn.disabled=false;btn.innerHTML=old}}
@@ -636,15 +877,20 @@ function cleanTpl(P){for(const n of Object.keys(P))if(n.startsWith('xl/printerSe
   if(typeof P['xl/workbook.xml']==='string')P['xl/workbook.xml']=P['xl/workbook.xml'].replace(/<mc:AlternateContent\b[^>]*>\s*<mc:Choice Requires="x15">\s*<x15ac:absPath[^>]*\/>\s*<\/mc:Choice>\s*<\/mc:AlternateContent>/g,'');
   return P}
 async function loadTplFile(file){st('Lendo o modelo…');try{const z=await unzip(await file.arrayBuffer()),td=new TextDecoder(),parts={};for(const n in z)parts[n]=/\.(xml|rels|vml)$/i.test(n)?td.decode(z[n]):z[n];cleanTpl(parts);
-    const T={name:file.name,rev:'',parts},c=parseCfg(T);TPL=T;CFG=c;tplErr='';await IDB.put('meta','tplUser',T);st('Modelo carregado');render()}
-  catch(e){tplErr='Não foi possível usar este arquivo como modelo ('+(e.message||'erro')+').';st('Modelo não carregado');render()}}
+    const T={name:file.name,rev:'',parts},c=parseCfg(T);
+    if(MODE!=='local'){if(!isAdm())throw new Error('só administradores enviam o modelo');st('Enviando o modelo para a equipe…');await putTeamTpl(T);st('Modelo enviado: todos passam a usar este arquivo');render();return}
+    TPL=T;CFG=c;tplErr='';await IDB.put('meta','tplUser',T);st('Modelo carregado');render()}
+  catch(e){tplErr='Não foi possível usar este arquivo como modelo ('+(e instanceof AppErr?msgErr(e):(e.message||'erro'))+').';st('Modelo não carregado');render()}}
 
 /* ---------- eventos ---------- */
-function render(){S.view==='list'?vList():vEdit();saveNav()}
-function onRemote(){if(S.ed)return;if(S.view==='list')vList();else if(S.tab!=='dados')vEdit();else if(!docs.has(S.cur)){S.view='list';vList()}}
+function render(){if(MODE!=='local'&&AU.st!=='in'){AU.st==='out'?vLogin():AU.st==='pend'?vPend():vBoot();return}
+  if(S.view==='users'&&!isAdm())S.view='list';S.view==='list'?vList():S.view==='users'?vUsers():vEdit();saveNav()}
+function onRemote(){if(S.ed||AU.st!=='in'||S.view==='users')return;if(S.view==='list')vList();else if(S.tab!=='dados')vEdit();else if(!docs.has(S.cur)){S.view='list';vList()}}
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-a],[data-open],[data-tab],[data-ea],[data-rmf],[data-rmg],[data-sort],[data-setcd],[data-setaf],[data-ens]');if(!t)return;
-  const a=t.dataset.a,i=docs.get(S.cur);
+  const t=e.target.closest('[data-a],[data-open],[data-tab],[data-ea],[data-rmf],[data-rmg],[data-sort],[data-setcd],[data-setaf],[data-ens],[data-atab],[data-ua]');if(!t)return;
+  const a=t.dataset.a,i=docs.get(S.cur);if(S.outArm&&a!=='sair')S.outArm=false;
+  if(t.dataset.atab){AU.tab=t.dataset.atab;AU.err='';vLogin();return}
+  if(t.dataset.ua){userAct(t);return}
   if(t.dataset.open){S.cur=t.dataset.open;S.view='edit';S.tab='itens';S.delArm=false;render();scrollTo(0,0)}
   else if(t.dataset.tab){S.tab=t.dataset.tab;S.delArm=false;render()}
   else if(t.dataset.sort){S.sort=t.dataset.sort;render()}
@@ -660,9 +906,17 @@ document.addEventListener('click',async e=>{
   else if(a==='salvarA'&&S.ed){S.rmF.forEach(dropPhoto);S.last={elem:S.ed.elem,mat:S.ed.mat,resp:S.ed.resp,loc:S.ed.loc};persist(S.ed);closeA(true)}
   else if(a==='dupA'&&S.ed){S.rmF.forEach(dropPhoto);persist(S.ed);const c=clone(S.ed);c.id=nid();c.created=Date.now();c.fotos=[];closeA(true);openA(c)}
   else if(a==='delA'&&S.ed){if(!S.delArm){S.delArm=true;drawSheet()}else{const o=docs.get(S.ed.id);new Set([...(o?o.fotos.map(f=>f.id):[]),...S.ed.fotos.map(f=>f.id),...S.rmF]).forEach(dropPhoto);S.newF=[];rmDoc(S.ed.id);closeA(true)}}
-  else if(a==='delI'&&i){if(!S.delArm){S.delArm=true;tDados(i)}else{anoms(i.id).forEach(x=>{x.fotos.forEach(f=>dropPhoto(f.id));rmDoc(x.id)});i.gerais.forEach(f=>dropPhoto(f.id));rmDoc(i.id);S.delArm=false;S.view='list';render()}}
+  else if(a==='delI'&&i&&canDelI(i)){if(!S.delArm){S.delArm=true;tDados(i)}else{anoms(i.id).forEach(x=>{x.fotos.forEach(f=>dropPhoto(f.id));rmDoc(x.id)});i.gerais.forEach(f=>dropPhoto(f.id));rmDoc(i.id);S.delArm=false;S.view='list';render()}}
   else if(t.dataset.rmg!==undefined&&i){const [f]=i.gerais.splice(+t.dataset.rmg,1);if(f)dropPhoto(f.id);persist(i);tDados(i)}
   else if(a==='xlsx'&&i)exportXlsx(i,t);
+  else if(a==='users'&&isAdm()){S.view='users';S.uArm='';S.pwFor='';render();scrollTo(0,0);loadUsers()}
+  else if(a==='ureload')loadUsers();
+  else if(a==='sair')doLogout(t);
+  else if(a==='recheck')recheck();
+  else if(a==='tplchk'){tplBusy=true;render();checkTpl()}
+  else if(a==='fotos'&&i)baixarFotos(i,t);
+  else if(a==='fshare'&&FZ){try{await navigator.share({files:FZ.files})}catch(err){if(err&&err.name!=='AbortError')st('Não foi possível compartilhar — use “Baixar .zip”')}}
+  else if(a==='fzip'&&FZ)zipFotos();
   else if(a==='exp'&&dl)busy(t,'Preparando backup…',async()=>{const ids=new Set();for(const o of docs.values()){if(o.kind==='insp')o.gerais.forEach(f=>ids.add(f.id));if(o.kind==='anom')o.fotos.forEach(f=>ids.add(f.id))}
     const fotos={};let miss=0;for(const id of ids){const p=await getPhoto(id);if(p)fotos[id]={data:p.data,w:p.w||0,h:p.h||0};else miss++}
     try{await dl.save({filename:`backup-inspecoes-${today()}.json`,data:JSON.stringify({app:'inspecao-estrutural',v:3,docs:[...docs.values()],fotos})});st(miss?`Backup salvo — ${miss} foto(s) indisponível(is)`:'Backup completo salvo')}catch(err){st(dlErr(err))}});
@@ -677,6 +931,10 @@ document.addEventListener('click',async e=>{
   else if(a==='xdown'&&XF&&dl){try{await dl.save({filename:XF.name,data:XF})}catch(err){st(dlErr(err))}}
 });
 $('#back').onclick=()=>{S.view='list';S.delArm=false;render();scrollTo(0,0)};
+document.addEventListener('submit',e=>{const f=e.target;
+  if(f.id==='fauth'){e.preventDefault();doAuth(f);return}
+  if(f.dataset&&f.dataset.pwf){e.preventDefault();const pw=String(new FormData(f).get('pw')||''),uid=f.dataset.pwf;if(pw.length<6){st('A senha precisa ter pelo menos 6 caracteres');return}
+    B.resetPw(uid,pw).then(()=>{S.pwFor='';st('Senha alterada. Passe a nova senha para a pessoa.');vUsers()},err=>st(msgErr(err)))}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(CAM.on)camClose();else if(S.ed)closeA(false)}});
 document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='crit')S.critOpen=e.target.open},true);
 $('#main').addEventListener('input',e=>{const el=e.target,i=docs.get(S.cur);if(!i)return;
@@ -703,22 +961,19 @@ $('#imp').addEventListener('change',async e=>{const f=e.target.files[0];e.target
     a.forEach(o=>{const x=norm(o);if(x){persist(x);n++}});st(`${n} itens e ${nf} fotos restaurados`);render()}catch(err){st('Arquivo inválido')}});
 
 /* ---------- início ---------- */
-let tplBusy=true;
-const tplReady=(async()=>{let t=await IDB.get('meta','tplUser');
-  if(!t||!t.parts){t=null;const el=document.getElementById('tpl-data');
-    if(el){try{t=JSON.parse(el.textContent)}catch(e){}}
-    if(!t){try{const r=await fetch('modelo-rev1.json',{cache:'no-cache'});if(r.ok)t=await r.json()}catch(e){}}
-    if(t&&t.parts)IDB.put('meta','tpl',t);else t=await IDB.get('meta','tpl')}
-  tplBusy=false;if(!t||!t.parts)return;
-  try{TPL=t;CFG=parseCfg(t)}catch(e){CFG=null;tplErr='O modelo tem um layout diferente do esperado ('+e.message+').'}})();
+let tplBusy=true,restored=false;
+async function localTpl(){const t=await IDB.get('meta','tplUser');tplBusy=false;if(!t||!t.parts)return;try{TPL=t;CFG=parseCfg(t)}catch(e){CFG=null;tplErr='O modelo tem um layout diferente do esperado ('+e.message+').'}}
 const ready=(async()=>{
   idbOK=await IDB.ok();
   let a=idbOK?await IDB.all('docs'):[];
   if(!a.length){try{a=JSON.parse(localStorage.getItem(LSK)||'[]')}catch(e){a=[]}if(!Array.isArray(a))a=[];if(idbOK)a.forEach(o=>o&&okId(o.id)&&IDB.put('docs',o.id,o))}
   a.forEach(o=>{const x=norm(o);if(x){const l=docs.get(x.id);if(!l||x.updated>l.updated)docs.set(x.id,x)}});
-  const m=idbOK&&await IDB.get('meta','sync');if(m){(m.dirty||[]).forEach(([k,v])=>{if(!dirty.has(k))dirty.set(k,v)});(m.known||[]).forEach(k=>known.add(k));seq=Math.max(seq,...[...dirty.values()].map(v=>+v.v||0),0)}
-  await tplReady;
-  if(CFG&&idbOK&&!S.ed){const fresh=t=>t&&Date.now()-t<12*36e5,nav=await IDB.get('meta','nav'),dr=await IDB.get('meta','draft');
+  const m=idbOK&&await IDB.get('meta','sync');if(m){(m.dirty||[]).forEach(([k,v])=>{if(!dirty.has(k))dirty.set(k,v)});seq=Math.max(seq,...[...dirty.values()].map(v=>+v.v||0),0)}
+})();
+async function restoreUI(){
+  if(restored||!CFG||!idbOK||S.ed){navOK=true;if(!S.ed)render();updSt();return}
+  restored=true;
+  {const fresh=t=>t&&Date.now()-t<12*36e5,nav=await IDB.get('meta','nav'),dr=await IDB.get('meta','draft');
     if(nav&&fresh(nav.ts)&&nav.view==='edit'&&docs.has(nav.cur)){S.view='edit';S.cur=nav.cur;S.tab=['dados','itens','rel'].includes(nav.tab)?nav.tab:'itens'}
     const de=dr&&fresh(dr.ts)&&docs.has(dr.cur)&&norm(dr.ed);
     const pd=await IDB.get('meta','pend'),pok=pd&&fresh(pd.ts)&&docs.has(pd.cur)&&Array.isArray(pd.files)&&pd.files.length;navOK=true;
@@ -727,37 +982,17 @@ const ready=(async()=>{
     if(de&&de.kind==='anom'&&(!pok||de.insp===pd.cur||pd.kind==='capa')){if(S.cur!==dr.cur){S.view='edit';S.cur=dr.cur;S.tab='itens';render()}openA(de);S.newF=(dr.newF||[]).filter(okId);S.rmF=(dr.rmF||[]).filter(okId);saveDraft(true);st('Item em edição recuperado')}
     if(pok){await addFiles(pd.kind==='capa'?'capa':(S.ed?'anom':'nova'),pd.files,true);st(pl(pd.files.length,'foto recuperada','fotos recuperadas'))}else if(pd)IDB.del('meta','pend');
     return}
-  navOK=true;if(!S.ed)render();updSt();
-})();
+  navOK=true;if(!S.ed)render();updSt()}
 render();
 (async()=>{
-  let framed=true;try{framed=window.top!==window}catch(e){}
-  let has=!!(window.claude&&typeof window.claude.use==='function');for(let k=0;framed&&k<15&&!has;k++){await new Promise(r=>setTimeout(r,100));has=!!(window.claude&&typeof window.claude.use==='function')}
-  if(!has){SA=true;dlKnown=true;dl={save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data]),u=URL.createObjectURL(b),x=document.createElement('a');x.href=u;x.download=filename;document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);return{status:'saved'}}};
-    if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)&&window.isSecureContext&&document.querySelector('link[rel=manifest]'))navigator.serviceWorker.register('sw.js').catch(()=>{});
-    try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist().catch(()=>{})}catch(e){}
-    await ready;if(S.ed)drawSheet();else render();return}
-  const [d,u,w]=await Promise.all(['db','user','downloads'].map(n=>claude.use(n).catch(()=>null)));
-  dl=w;dlKnown=true;await ready;if(!S.ed&&(S.view==='list'||S.tab==='rel'))render();
-  if(!d||!u){updSt();return}
-  let id=null;try{id=await u.id()}catch(e){}
-  if(!id){updSt();return}
-  const prev=idbOK&&await IDB.get('meta','uid');
-  if(prev&&prev!==id){docs.clear();dirty.clear();known.clear();fmem.clear();await Promise.all(['docs','fotos'].map(IDB.clr));saveMeta();render()}
-  IDB.put('meta','uid',id);
-  col=d.collection('data/users/'+id);fcol=d.doc('data/users/'+id+'/fotos').collection('itens');
-  st('Sincronizando…');let synced=false;
-  const to=setTimeout(()=>{if(!synced)st('Nuvem fora de alcance — salvo no aparelho')},10000);
-  col.onSnapshot(s=>{let ch=false;const R=new Map();
-    for(const x of s.docs){const v=x.data();if(v&&(v.kind==='insp'||v.kind==='anom'))R.set(x.id,v)}
-    for(const [k,v] of R){known.add(k);if(dirty.has(k))continue;const l=docs.get(k);
-      if(!l||(+v.updated||0)>l.updated){const o=norm(Object.assign(clone(v),{id:k}));if(o){docs.set(k,o);IDB.put('docs',k,o);ch=true}}}
-    if(!s.metadata.fromCache){
-      for(const [k] of [...docs]){if(R.has(k)||dirty.has(k))continue;if(known.has(k)){docs.delete(k);IDB.del('docs',k);known.delete(k);ch=true}else mark(k,'d')}
-      if(!synced){synced=true;clearTimeout(to)}saveMeta();later(300)}
-    if(ch){if(!idbOK)saveLS();onRemote()}
-  },()=>{clearTimeout(to);col=null;fcol=null;updSt()});
-})();
+  dlKnown=true;dl={save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data]),u=URL.createObjectURL(b),x=document.createElement('a');x.href=u;x.download=filename;document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);return{status:'saved'}}};
+  if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)&&window.isSecureContext&&document.querySelector('link[rel=manifest]')){const had=!!navigator.serviceWorker.controller;let upd=false;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!had||upd)return;upd=true;const go=()=>{if(S.ed||CAM.on||flushing){setTimeout(go,5000);return}location.reload()};go()});
+    navigator.serviceWorker.register('sw.js').catch(()=>{})}
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist().catch(()=>{})}catch(e){}
+  await ready;
+  if(MODE==='local'){await localTpl();await restoreUI();if(S.ed)drawSheet();else render();return}
+  await boot()})();
 }
 </script>
 </body>

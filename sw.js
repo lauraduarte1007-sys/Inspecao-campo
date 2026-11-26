@@ -1,7 +1,8 @@
 /* Inspeção Estrutural — funciona sem internet.
-   O app abre na hora a partir do aparelho e se atualiza sozinho em segundo plano quando há conexão. */
-const V = 'inspecao-campo-v1';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-180.png'];
+   O app abre na hora a partir do aparelho e se atualiza sozinho em segundo plano quando há conexão.
+   Os dados (banco da equipe) nunca passam por este cache. */
+const V = 'inspecao-campo-8e7bcdb5d7';
+const SHELL = ['./', './index.html', './config.js', './firebase.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-180.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -18,8 +19,8 @@ self.addEventListener('fetch', e => {
   if (r.method !== 'GET') return;
   const u = new URL(r.url);
   const font = u.hostname === 'fonts.googleapis.com' || u.hostname === 'fonts.gstatic.com';
-  if (u.origin !== location.origin && !font) return;
-  if (u.pathname.endsWith('/modelo-rev1.json')) return;   // o modelo nunca fica neste cache
+  if (u.origin !== location.origin && !font) return;          // Firebase e servidor da TI: direto na rede
+  if (u.pathname.includes('/api/') || u.pathname.endsWith('/modelo-rev1.json')) return;
   e.respondWith(caches.open(V).then(async c => {
     const key = r.mode === 'navigate' ? './index.html' : r;
     const hit = await c.match(key, { ignoreSearch: true });

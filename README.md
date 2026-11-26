@@ -1,20 +1,32 @@
 # Inspeção Estrutural — app de campo
 
-Preenche o relatório de inspeção estrutural no celular, com as fotos tiradas pela câmera dentro do próprio app, e exporta a planilha no modelo da empresa. Não precisa de login.
+Preenche o relatório de inspeção estrutural no celular e no computador, com fotos tiradas pela câmera dentro do próprio app, e exporta a planilha no modelo da empresa. Os dados ficam sincronizados entre todos os usuários liberados.
 
 **Abrir o app:** https://lauraduarte1007-sys.github.io/Inspecao-campo/
 
+## Acesso
+
+- Cada pessoa entra com **matrícula e senha**. Quem ainda não tem acesso toca em **Criar cadastro**.
+- O cadastro fica **aguardando liberação** até um administrador liberar em **Usuários**.
+- O **primeiro cadastro** do app vira administrador. Administradores liberam, desativam e promovem usuários, e enviam o modelo do relatório.
+
 ## Instalar no celular
-- **iPhone (Safari):** abra o link → Compartilhar → Adicionar à Tela de Início. Use sempre o ícone "Inspeção" e carregue o modelo já pelo ícone (no iPhone, o ícone guarda os dados separado do Safari).
+
+- **iPhone (Safari):** abra o link → Compartilhar → Adicionar à Tela de Início. Use sempre o ícone “Inspeção”.
 - **Android (Chrome):** abra o link → Instalar app (ou menu ⋮ → Adicionar à tela inicial).
 
-Na primeira abertura, o app pede o arquivo do modelo (Relatório de Inspeção Estrutural - rev1.xlsx). O modelo fica guardado só no celular: ele não está neste repositório.
+Sem sinal, o app continua funcionando: o que for feito fica guardado no aparelho e é enviado quando a conexão voltar.
+
+## Modelo do relatório
+
+O arquivo .xlsx do modelo fica guardado no banco, liberado só para logins ativos. Ele **não** está neste repositório. Para trocar a versão do modelo: **Usuários → Enviar nova versão (.xlsx)**. Todos passam a usar o novo modelo automaticamente.
 
 ## Onde ficam os dados
-As inspeções e as fotos ficam no próprio celular. Nada é enviado para este repositório nem para outro servidor. Para levar para outro aparelho: Mais opções → Backup completo (com fotos) e, no outro aparelho, Restaurar backup.
 
-## Exportar a planilha
-Aba Relatório → Gerar planilha (.xlsx). No iPhone, aparece Compartilhar (e-mail, WhatsApp, Arquivos…). No Android, a planilha vai para Downloads.
+No projeto Firebase `inspecao-campo` (Authentication + Firestore). As regras de segurança estão em [`firestore.rules`](firestore.rules): só quem tem cadastro ativo lê e grava inspeções, fotos e o modelo. Ao alterar as regras, publique o conteúdo do arquivo em *Firebase → Firestore Database → Regras → Publicar*.
+
+Para usar um servidor da própria empresa no lugar do Firebase, veja a pasta [`servidor-ti`](servidor-ti/LEIA-ME.md): ela traz um servidor de referência e a especificação da API. A troca é feita só no `config.js`.
 
 ## Atualizar o app
-O site é publicado a partir do branch **gh-pages**: as mudanças precisam ir para esse branch (o main guarda uma cópia). Os celulares baixam a nova versão sozinhos quando abrem o app com internet, e ela aparece na abertura seguinte.
+
+O site é publicado a partir do branch **gh-pages** (o main guarda uma cópia). Os aparelhos baixam a nova versão sozinhos quando abrem o app com internet.
