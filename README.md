@@ -17,4 +17,4 @@ As inspeções e as fotos ficam no próprio celular. Nada é enviado para este r
 Aba Relatório → Gerar planilha (.xlsx). No iPhone, aparece Compartilhar (e-mail, WhatsApp, Arquivos…). No Android, a planilha vai para Downloads.
 
 ## Atualizar o app
-Troque os arquivos deste repositório. Os celulares baixam a nova versão sozinhos quando abrem o app com internet, e ela aparece na abertura seguinte.
+O site é publicado a partir do branch **gh-pages**: as mudanças precisam ir para esse branch (o main guarda uma cópia). Os celulares baixam a nova versão sozinhos quando abrem o app com internet, e ela aparece na abertura seguinte.
