@@ -64,5 +64,62 @@ service cloud.firestore {
         && request.resource.data.data is string;
       allow delete: if ativo();
     }
+
+    // ----- Cópia de teste com IA: as mesmas regras, com as coleções separadas (prefixo ia_) -----
+    function iaUserPath(uid) { return /databases/$(database)/documents/ia_users/$(uid); }
+    function iaMe() { return get(iaUserPath(request.auth.uid)); }
+    function iaAtivo() { return signedIn() && exists(iaUserPath(request.auth.uid)) && iaMe().data.status == 'ativo'; }
+    function iaAdmin() { return iaAtivo() && iaMe().data.role == 'admin'; }
+    function iaSemAdmin() { return !exists(/databases/$(database)/documents/ia_config/admin); }
+
+    match /ia_users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || iaAdmin());
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['mat', 'nome', 'role', 'status', 'criado', 'reset', 'conta'])
+        && matOk(request.resource.data.mat)
+        && (!('conta' in request.resource.data) || request.resource.data.conta == request.auth.token.email)
+        && (!('reset' in request.resource.data) || (request.resource.data.reset == true && request.resource.data.role == 'user'))
+        && request.resource.data.nome is string && request.resource.data.nome.size() >= 2 && request.resource.data.nome.size() <= 80
+        && ((request.resource.data.role == 'user' && request.resource.data.status == 'pendente')
+            || (request.resource.data.role == 'admin' && request.resource.data.status == 'ativo' && iaSemAdmin()
+                && getAfter(/databases/$(database)/documents/ia_config/admin).data.uid == request.auth.uid));
+      allow update: if iaAdmin() && request.auth.uid != uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'role', 'nome'])
+        && request.resource.data.status in ['pendente', 'ativo', 'inativo']
+        && request.resource.data.role in ['user', 'admin'];
+      allow delete: if iaAdmin() && request.auth.uid != uid;
+    }
+
+    match /ia_contas/{m} {
+      allow read: if true;
+      allow write: if iaAdmin();
+    }
+
+    match /ia_config/{k} {
+      allow read: if (k == 'admin' && signedIn()) || iaAtivo();
+      allow create: if k == 'admin' && signedIn() && iaSemAdmin()
+        && request.resource.data.keys().hasOnly(['uid']) && request.resource.data.uid == request.auth.uid
+        && getAfter(iaUserPath(request.auth.uid)).data.role == 'admin';
+      allow write: if iaAdmin() && k in ['modelo', 'modeloInfo'];
+    }
+
+    match /ia_docs/{id} {
+      allow read: if iaAtivo();
+      allow create, update: if iaAtivo()
+        && request.resource.data.keys().hasOnly(['kind', 'j', 'updated', 'del', 'by', 'byNome', 'ts'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.ts == request.time
+        && request.resource.data.j is string;
+      allow delete: if iaAdmin();
+    }
+
+    match /ia_fotos/{id} {
+      allow read: if iaAtivo();
+      allow create, update: if iaAtivo()
+        && request.resource.data.keys().hasOnly(['data', 'w', 'h', 'by', 'ts'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.data is string;
+      allow delete: if iaAtivo();
+    }
   }
 }

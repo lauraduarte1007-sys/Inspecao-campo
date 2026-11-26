@@ -97,6 +97,8 @@ details.help summary{cursor:pointer;font-weight:700;min-height:32px;display:flex
 .chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .foot{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:10px 0;display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 .auth{max-width:440px;margin:0 auto}.ahero{text-align:center;margin:8px 0 14px}.ahero svg{max-width:300px;width:100%;height:auto}.ahero p{margin:6px 0 0}
+.iab{border:1px dashed var(--acc);border-radius:12px;padding:12px 14px;margin:14px 0;background:#ff5a1f0a}.iab>b{display:block}.iab dl{margin:8px 0 10px}.iab dt{color:var(--mut);font-size:13px;margin-top:8px}.iab dd{margin:2px 0 0;font-weight:600;overflow-wrap:anywhere}.iab .row{gap:6px}
+.aviso{background:#1d2329;color:#fff;border-radius:10px;padding:8px 12px;font-size:14px;margin:6px 0 12px}
 .aform{display:grid;gap:12px;margin:14px 0 8px}.aok{color:#1b5e20;background:#2e7d3214;border-radius:10px;padding:10px 12px;margin:4px 0 0;font-size:14px}.lnk{margin-top:4px}.aform .btn{justify-content:center;min-height:48px}.aerr{color:var(--err,#b3261e);background:#b3261e14;border-radius:10px;padding:10px 12px;margin:4px 0 0;font-size:14px}
 .who{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}.wn{display:flex;gap:8px;align-items:center;flex:1 1 180px;min-width:0}.wn b{display:block}.wn small{color:var(--mut);display:block;font-size:13px}.wn svg{flex:none}
 .who .ct,.btn .ct{margin-left:6px}
@@ -130,7 +132,7 @@ details.help summary{cursor:pointer;font-weight:700;min-height:32px;display:flex
 </style>
 </head>
 <body>
-<header><button class="ib" id="back" aria-label="Voltar" hidden>←</button><h1 id="ttl">Inspeção Estrutural</h1><span class="st" id="st" role="status">Carregando…</span></header>
+<header><button class="ib" id="back" aria-label="Voltar" hidden>←</button><h1 id="ttl"></h1><span class="st" id="st" role="status">Carregando…</span></header>
 <main class="wrap" id="main"></main>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Item da inspeção"></div>
 <div class="cam" id="cam" hidden role="dialog" aria-modal="true" aria-label="Câmera"><video id="camv" playsinline muted autoplay></video><div class="camf" id="camf"></div>
@@ -154,7 +156,8 @@ const serial=s=>Math.round((Date.parse(s+'T00:00:00Z')-Date.UTC(1899,11,30))/864
 const nrm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
 const cl=v=>String(v??'').replace(/\r\n?/g,'\n').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g,'');
 const pl=(n,s,p)=>`${n} ${n==1?s:p}`;
-const MAXF=4,MAXG=3,LSK='inspEstr.v1';
+const IC0=window.INSP_CONFIG||{},APPN=IC0.titulo||'Inspeção Estrutural',DBN=IC0.db||'inspEstr',KP=IC0.chave||'inspEstr';
+const MAXF=4,MAXG=3,LSK=KP+'.v1';
 const CAM={on:false,t:'',s:null,denied:false,torch:false,q:0};
 const canCam=()=>SA&&!CAM.denied&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)&&window.isSecureContext;
 const camBtn=(t,l,p)=>canCam()?`<button class="btn${p?' pri':''}" data-a="cam" data-t="${t}">${IC.cam} ${l}</button>`:`<label class="btn up${p?' pri':''}">${IC.cam} ${l}<input type="file" accept="image/*" capture="environment" data-up="${t}"></label>`;
@@ -252,7 +255,7 @@ function score(a,d){const c=CFG.calc,o={pont:null,nivel:'',gut:null,prio:'',praz
 const badge=(rows,l,n)=>{const k=rows.findIndex(r=>r[1]===l);if(k<0)return '';const j=Math.min(k,3);return `<span class="bd" style="background:${LV[j]};color:${LT[j]}">${n!=null?esc(n)+' · ':''}${esc(l)}</span>`};
 
 /* ---------- armazenamento local (IndexedDB) ---------- */
-const IDB=(()=>{let p;const open=()=>p||(p=new Promise((ok,no)=>{try{const q=indexedDB.open('inspEstr',1);q.onupgradeneeded=()=>{for(const n of ['docs','fotos','meta'])if(!q.result.objectStoreNames.contains(n))q.result.createObjectStore(n)};q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error);q.onblocked=()=>no(new Error('blocked'))}catch(e){no(e)}}));
+const IDB=(()=>{let p;const open=()=>p||(p=new Promise((ok,no)=>{try{const q=indexedDB.open(DBN,1);q.onupgradeneeded=()=>{for(const n of ['docs','fotos','meta'])if(!q.result.objectStoreNames.contains(n))q.result.createObjectStore(n)};q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error);q.onblocked=()=>no(new Error('blocked'))}catch(e){no(e)}}));
  const run=(s,m,f)=>open().then(d=>new Promise((ok,no)=>{const t=d.transaction(s,m),q=f(t.objectStore(s));t.oncomplete=()=>ok(q&&q.result);t.onerror=t.onabort=()=>no(t.error)}));
  return{ok:()=>open().then(()=>true,()=>false),get:(s,k)=>run(s,'readonly',o=>o.get(k)).catch(()=>undefined),put:(s,k,v)=>run(s,'readwrite',o=>o.put(v,k)).then(()=>true,()=>false),del:(s,k)=>run(s,'readwrite',o=>o.delete(k)).catch(()=>{}),all:s=>run(s,'readonly',o=>o.getAll()).catch(()=>[]),clr:s=>run(s,'readwrite',o=>o.clear()).catch(()=>{})}})();
 
@@ -319,54 +322,55 @@ function mkApi(base){base=String(base).replace(/\/+$/,'');let tok=null;
     putModelo:T=>call('PUT','/modelo',T)}}
 
 /* Firebase: Authentication (e-mail/senha, com a matrícula no lugar do e-mail) + Firestore. Regras em firestore.rules */
-function mkFb(cfg){let F=null,auth=null,db=null,uid=null;const mail=m=>m+'@matricula.example.com';
+function mkFb(cfg){let F=null,auth=null,db=null,uid=null;const mail=m=>m+'@matricula.example.com',PX=cfg.prefixo||'',C=n=>PX+n;
   const E=e=>{if(e instanceof AppErr)return e;const c=String((e&&e.code)||'').replace(/^(auth|firestore)\//,'');
     return new AppErr(['invalid-credential','wrong-password','user-not-found','invalid-login-credentials','invalid-email','user-disabled'].includes(c)?'cred':c==='email-already-in-use'?'exists':c==='weak-password'||c==='password-does-not-meet-requirements'?'weak':
       ['network-request-failed','unavailable','deadline-exceeded'].includes(c)?'net':c==='too-many-requests'?'many':c==='permission-denied'||c==='unauthenticated'?'denied':c==='operation-not-allowed'||c==='admin-restricted-operation'?'setup-auth':
       /api-key|invalid-app-id|app-not-authorized|configuration-not-found|project-not-found/.test(c)?'setup-key':c==='not-found'?'setup-db':c==='resource-exhausted'?'quota':c==='invalid-argument'?'too-big':'server',(e&&e.message)||c)};
   const T=async f=>{try{return await f()}catch(e){throw E(e)}};
-  const prof=async()=>{const s=await F.getDoc(F.doc(db,'users',uid));if(!s.exists())return null;const d=s.data();return{uid,mat:d.mat,nome:d.nome,role:d.role,status:d.status}};
-  async function mkProf(nome,mat){let first=!(await F.getDoc(F.doc(db,'config','admin'))).exists();
-    for(let k=0;k<2;k++){const p={mat,nome,role:first?'admin':'user',status:first?'ativo':'pendente',criado:F.serverTimestamp()},b=F.writeBatch(db);b.set(F.doc(db,'users',uid),p);if(first)b.set(F.doc(db,'config','admin'),{uid});
+  const prof=async()=>{const s=await F.getDoc(F.doc(db,C('users'),uid));if(!s.exists())return null;const d=s.data();return{uid,mat:d.mat,nome:d.nome,role:d.role,status:d.status}};
+  async function mkProf(nome,mat){let first=!(await F.getDoc(F.doc(db,C('config'),'admin'))).exists();
+    for(let k=0;k<2;k++){const p={mat,nome,role:first?'admin':'user',status:first?'ativo':'pendente',criado:F.serverTimestamp()},b=F.writeBatch(db);b.set(F.doc(db,C('users'),uid),p);if(first)b.set(F.doc(db,C('config'),'admin'),{uid});
       try{await b.commit();return{uid,mat,nome,role:p.role,status:p.status}}catch(e){if(first&&/permission/.test(String(e.code))){first=false;continue}throw e}}}
   const ensure=async(nome,mat)=>{const p=await prof();if(p)return p;const m=mat||String((auth.currentUser&&auth.currentUser.email)||'').split('@')[0].split('+')[0];return mkProf(nome||m,m)};
-  const conta=async mat=>{try{const s=await F.getDoc(F.doc(db,'contas',mat));if(s.exists()&&s.data().email)return s.data().email}catch(e){}return mail(mat)};
+  const conta=async mat=>{try{const s=await F.getDoc(F.doc(db,C('contas'),mat));if(s.exists()&&s.data().email)return s.data().email}catch(e){}return mail(mat)};
   const pq=c=>[F.where('ts','>',F.Timestamp.fromMillis(Math.max(0,(+c||0)-2000))),F.orderBy('ts')];
   return{caps:{resetPw:false},
     async init(){try{F=await import('./firebase.js')}catch(e){throw new AppErr('net','Não foi possível carregar o módulo do Firebase.')}
-      try{const app=F.initializeApp(cfg);auth=F.initializeAuth(app,{persistence:[F.indexedDBLocalPersistence,F.browserLocalPersistence]});db=F.getFirestore(app)}catch(e){throw new AppErr('setup-key',e&&e.message)}
+      try{const o={};for(const k of ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'])if(cfg[k])o[k]=cfg[k];const app=cfg.app?F.initializeApp(o,cfg.app):F.initializeApp(o);auth=F.initializeAuth(app,{persistence:[F.indexedDBLocalPersistence,F.browserLocalPersistence]});db=F.getFirestore(app)}catch(e){throw new AppErr('setup-key',e&&e.message)}
       const u=await new Promise(ok=>{const off=F.onAuthStateChanged(auth,x=>{off();ok(x)},()=>ok(null))});uid=u?u.uid:null;return uid},
     login:(mat,senha)=>T(async()=>{const c=await F.signInWithEmailAndPassword(auth,await conta(mat),senha);uid=c.user.uid;return ensure('',mat)}),
     pedirSenha:(nome,mat,senha)=>T(async()=>{const em=mat+'+r'+Date.now().toString(36)+'@matricula.example.com',c=await F.createUserWithEmailAndPassword(auth,em,senha);uid=c.user.uid;
-      try{await F.setDoc(F.doc(db,'users',uid),{mat,nome,role:'user',status:'pendente',criado:F.serverTimestamp(),reset:true,conta:em})}finally{try{await F.signOut(auth)}catch(e){}uid=null}}),
+      try{await F.setDoc(F.doc(db,C('users'),uid),{mat,nome,role:'user',status:'pendente',criado:F.serverTimestamp(),reset:true,conta:em})}finally{try{await F.signOut(auth)}catch(e){}uid=null}}),
     aprovarSenha:(u,all)=>T(async()=>{const old=(all||[]).filter(x=>x.mat===u.mat&&x.uid!==u.uid&&x.uid!==uid),b=F.writeBatch(db);
-      b.update(F.doc(db,'users',u.uid),{status:'ativo',role:old.some(x=>x.role==='admin'&&x.status==='ativo')?'admin':'user'});
-      for(const x of old)b.delete(F.doc(db,'users',x.uid));
-      b.set(F.doc(db,'contas',u.mat),{email:u.conta,uid:u.uid});await b.commit()}),
-    recusarSenha:u=>T(()=>F.deleteDoc(F.doc(db,'users',u.uid))),
+      b.update(F.doc(db,C('users'),u.uid),{status:'ativo',role:old.some(x=>x.role==='admin'&&x.status==='ativo')?'admin':'user'});
+      for(const x of old)b.delete(F.doc(db,C('users'),x.uid));
+      b.set(F.doc(db,C('contas'),u.mat),{email:u.conta,uid:u.uid});await b.commit()}),
+    recusarSenha:u=>T(()=>F.deleteDoc(F.doc(db,C('users'),u.uid))),
     register:(nome,mat,senha)=>T(async()=>{const c=await F.createUserWithEmailAndPassword(auth,mail(mat),senha);uid=c.user.uid;return ensure(nome,mat)}),
     logout:()=>T(async()=>{await F.signOut(auth);uid=null}),
+    token:()=>auth&&auth.currentUser?auth.currentUser.getIdToken():Promise.reject(new AppErr('auth')),
     me:()=>T(()=>ensure()),
-    users:()=>T(async()=>(await F.getDocs(F.collection(db,'users'))).docs.map(x=>{const d=x.data();return{uid:x.id,mat:d.mat,nome:d.nome,role:d.role,status:d.status,reset:!!d.reset,conta:d.conta||''}})),
-    setUser:(id,p)=>T(()=>F.updateDoc(F.doc(db,'users',id),p)),
-    delUser:id=>T(()=>F.deleteDoc(F.doc(db,'users',id))),
+    users:()=>T(async()=>(await F.getDocs(F.collection(db,C('users')))).docs.map(x=>{const d=x.data();return{uid:x.id,mat:d.mat,nome:d.nome,role:d.role,status:d.status,reset:!!d.reset,conta:d.conta||''}})),
+    setUser:(id,p)=>T(()=>F.updateDoc(F.doc(db,C('users'),id),p)),
+    delUser:id=>T(()=>F.deleteDoc(F.doc(db,C('users'),id))),
     pull:c=>T(async()=>{const out=[];let mx=+c||0,last=null;
-      for(let g=0;g<60;g++){const s=await F.getDocs(F.query(F.collection(db,'docs'),...pq(c),...(last?[F.startAfter(last)]:[]),F.limit(300)));
+      for(let g=0;g<60;g++){const s=await F.getDocs(F.query(F.collection(db,C('docs')),...pq(c),...(last?[F.startAfter(last)]:[]),F.limit(300)));
         for(const x of s.docs){const d=x.data(),t=d.ts&&d.ts.toMillis?d.ts.toMillis():0;if(t>mx)mx=t;out.push({id:x.id,kind:d.kind,j:d.j,updated:+d.updated||0,del:!!d.del})}
         if(s.docs.length<300)break;last=s.docs[s.docs.length-1]}
       return{docs:out,cursor:mx}}),
-    watchModelo(cb){let first=true;return F.onSnapshot(F.doc(db,'config','modeloInfo'),s=>{if(first){first=false;return}cb()},()=>{})},
-    listen(c,onDocs,onErr){const q=F.query(F.collection(db,'docs'),...pq(c));
+    watchModelo(cb){let first=true;return F.onSnapshot(F.doc(db,C('config'),'modeloInfo'),s=>{if(first){first=false;return}cb()},()=>{})},
+    listen(c,onDocs,onErr){const q=F.query(F.collection(db,C('docs')),...pq(c));
       return F.onSnapshot(q,{includeMetadataChanges:true},s=>{const out=[];let mx=+c||0;
         for(const ch of s.docChanges()){if(ch.type==='removed')continue;const x=ch.doc;if(x.metadata.hasPendingWrites)continue;const d=x.data(),t=d.ts&&d.ts.toMillis?d.ts.toMillis():0;if(t>mx)mx=t;out.push({id:x.id,kind:d.kind,j:d.j,updated:+d.updated||0,del:!!d.del})}
         onDocs(out,mx,!!s.metadata.fromCache)},e=>onErr(E(e)))},
-    push:list=>T(async()=>{const b=F.writeBatch(db);for(const r of list)b.set(F.doc(db,'docs',r.id),{kind:r.kind||'',j:r.j||'',updated:+r.updated||0,del:!!r.del,by:uid,byNome:(ME&&ME.nome)||'',ts:F.serverTimestamp()});await b.commit()}),
-    getFoto:id=>T(async()=>{const s=await F.getDoc(F.doc(db,'fotos',id));if(!s.exists())return null;const d=s.data();return{data:d.data,w:+d.w||0,h:+d.h||0}}),
-    putFoto:(id,r)=>T(()=>F.setDoc(F.doc(db,'fotos',id),{data:r.data,w:+r.w||0,h:+r.h||0,by:uid,ts:F.serverTimestamp()})),
-    delFoto:id=>T(()=>F.deleteDoc(F.doc(db,'fotos',id))),
-    modeloInfo:()=>T(async()=>{const s=await F.getDoc(F.doc(db,'config','modeloInfo'));return s.exists()?s.data():null}),
-    getModelo:()=>T(async()=>{const s=await F.getDoc(F.doc(db,'config','modelo'));if(!s.exists())throw new AppErr('notfound');return JSON.parse(s.data().j)}),
-    putModelo:P=>T(async()=>{const b=F.writeBatch(db);b.set(F.doc(db,'config','modelo'),{j:JSON.stringify(P)});b.set(F.doc(db,'config','modeloInfo'),{ver:P.ver,name:P.name,em:P.em||Date.now()});await b.commit()})}}
+    push:list=>T(async()=>{const b=F.writeBatch(db);for(const r of list)b.set(F.doc(db,C('docs'),r.id),{kind:r.kind||'',j:r.j||'',updated:+r.updated||0,del:!!r.del,by:uid,byNome:(ME&&ME.nome)||'',ts:F.serverTimestamp()});await b.commit()}),
+    getFoto:id=>T(async()=>{const s=await F.getDoc(F.doc(db,C('fotos'),id));if(!s.exists())return null;const d=s.data();return{data:d.data,w:+d.w||0,h:+d.h||0}}),
+    putFoto:(id,r)=>T(()=>F.setDoc(F.doc(db,C('fotos'),id),{data:r.data,w:+r.w||0,h:+r.h||0,by:uid,ts:F.serverTimestamp()})),
+    delFoto:id=>T(()=>F.deleteDoc(F.doc(db,C('fotos'),id))),
+    modeloInfo:()=>T(async()=>{const s=await F.getDoc(F.doc(db,C('config'),'modeloInfo'));return s.exists()?s.data():null}),
+    getModelo:()=>T(async()=>{const s=await F.getDoc(F.doc(db,C('config'),'modelo'));if(!s.exists())throw new AppErr('notfound');return JSON.parse(s.data().j)}),
+    putModelo:P=>T(async()=>{const b=F.writeBatch(db);b.set(F.doc(db,C('config'),'modelo'),{j:JSON.stringify(P)});b.set(F.doc(db,C('config'),'modeloInfo'),{ver:P.ver,name:P.name,em:P.em||Date.now()});await b.commit()})}}
 
 /* ---------- sincronização: envia o que mudou aqui e busca só o que mudou no banco ---------- */
 function updSt(net){if(net!==undefined)netDown=!!net;if(MODE==='local'){st('Salvo neste aparelho');return}if(AU.st!=='in'){st('');return}
@@ -429,6 +433,7 @@ async function startSync(){if(syncOn||!B)return;syncOn=true;synced0=false;
     IDB.put('meta','cursor',{bk:BK,v:0})}
   else cursor=+c.v||0;
   updSt();later(600);if(B.listen)attach();else{pull();watchStart()}
+  if(IA)setTimeout(iaRun,3000);
   clearInterval(meT);meT=setInterval(()=>{if(!syncOn)return;if(Date.now()-tplChk>6e5)checkTpl();B.me().then(p=>{if(p&&p.status!=='ativo')setMe(p)},()=>{})},6e5)}
 function stopSync(){syncOn=false;clearTimeout(pollT);clearTimeout(ft);clearTimeout(lisT);clearTimeout(wT);clearInterval(meT);if(unsub){try{unsub()}catch(e){}unsub=null}if(unsubM){try{unsubM()}catch(e){}unsubM=null}if(wAbort){const a=wAbort;wAbort=null;a.abort()}}
 async function accessLost(e){stopSync();
@@ -568,7 +573,7 @@ function frameSVG(n){const dots=[[118,112,0],[262,58,1],[194,84,3],[330,112,2]].
   <g fill="var(--line)" stroke="var(--mut)" stroke-width="1.2">${[60,160,250,340].map(x=>`<rect x="${x-6}" y="20" width="12" height="108" rx="1"/>`).join('')}${[20,56,92].map(y=>`<rect x="48" y="${y}" width="304" height="9" rx="1"/>`).join('')}<path d="M60 92 L160 56 M160 92 L250 56 M250 92 L340 56" fill="none"/></g>
   ${dots.map(([x,y,c])=>`<circle cx="${x}" cy="${y}" r="11" fill="${LV[c]}" opacity=".25"/><circle cx="${x}" cy="${y}" r="5" fill="${LV[c]}" stroke="#0005" stroke-width=".8"/>`).join('')}</svg>`}
 /* ---------- versão de campo: convite para instalar na tela inicial ---------- */
-let BIP=null,instNo=false;try{instNo=localStorage.getItem('inspEstr.instNo')==='1'}catch(e){}
+let BIP=null,instNo=false;try{instNo=localStorage.getItem(KP+'.instNo')==='1'}catch(e){}
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();BIP=e;if(S.view==='list'&&!S.ed)vList()});
 addEventListener('appinstalled',()=>{BIP=null;if(S.view==='list'&&!S.ed)vList()});
 const isInst=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}};
@@ -577,11 +582,62 @@ function instHTML(){if(!SA||instNo||isInst()||!document.querySelector('link[rel=
   const t=isIOS()?'No Safari, toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>. Use sempre o ícone “Inspeção”: no iPhone ele guarda os dados separado do Safari, então '+(MODE==='local'?'carregue o modelo':'entre com a matrícula')+' já pelo ícone.'
     :BIP?'Fica um ícone na tela inicial, abre em tela cheia e funciona sem internet.':'No menu do navegador (⋮), toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>. Fica um ícone, abre em tela cheia e funciona sem internet.';
   return `<div class="inst"><b>Instale o app neste celular</b><p>${t}</p><div class="row">${BIP?'<button class="btn pri sm" data-a="inst">Instalar app</button>':''}<button class="btn sm" data-a="instno">Agora não</button></div></div>`}
+/* ---------- IA: o Claude olha as fotos do item e sugere a classificação e a descrição (o inspetor confere) ---------- */
+const IA=CONF.ia?{url:String(CONF.ia.url||'').replace(/\/+$/,''),auto:CONF.ia.auto!==false}:null;
+let DEV='',iaBusy=new Set(),iaT=0;
+const IAERR={'ia-sem-foto':'Tire pelo menos uma foto para a IA analisar.','ia-config':'A IA ainda não está configurada no servidor (chave do Claude).','ia-ocupada':'A IA está ocupada agora. Tente de novo em instantes.',
+  'ia-limite':'Muitos pedidos seguidos para a IA. Aguarde alguns minutos.','ia-erro':'A IA não conseguiu analisar estas fotos.',auth:'Entre de novo para usar a IA.',denied:'Seu acesso não permite usar a IA.',net:'Sem conexão com a IA.'};
+async function devId(){if(DEV)return DEV;DEV=(await IDB.get('meta','dev'))||nid();IDB.put('meta','dev',DEV);return DEV}
+async function iaSugerir(a){const i=docs.get(a.insp),fotos=[];
+  for(const f of a.fotos.slice(0,MAXF)){const r=await getPhoto(f.id);if(r&&okImg(r.data))fotos.push(r.data)}
+  if(!fotos.length)throw new AppErr('ia-sem-foto');
+  if(!IA.url||!B||!B.token)throw new AppErr('ia-config');
+  const L=CFG.L,ctx={tipo:(i&&i.d.tipo)||'',elemento:a.elem||'',material:a.mat||'',localizacao:a.loc||'',descricao:a.descr||'',
+    listas:{elemento:L.elem||[],material:L.mat||[],causa:L.causa||[],origem:L.orig||[],manifestacao:(CFG.dep&&CFG.dep.map)||{'':L.manif||[]}}};
+  const tok=await B.token();let r;
+  try{r=await fetch(IA.url+'/descrever',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({fotos,contexto:ctx}),cache:'no-store',credentials:'omit'})}catch(e){throw new AppErr('net')}
+  let j=null;try{j=await r.json()}catch(e){}
+  if(!r.ok||!j||!j.sug)throw new AppErr((j&&j.code)||(r.status===401?'auth':r.status===403?'denied':r.status===429?'ia-limite':'ia-erro'));
+  return j.sug}
+const iaMsg=e=>IAERR[e&&e.code]||msgErr(e);
+function iaInner(a){const s=a.ia&&a.ia.sug;
+  if(iaBusy.has(a.id))return '<b>✨ Sugestão da IA</b><p class="mut">Analisando as fotos…</p>';
+  if(s){const row=(l,v)=>v?`<dt>${esc(l)}</dt><dd>${esc(v)}</dd>`:'';
+    return `<b>✨ Sugestão da IA${a.ia.usada?' · aplicada':''}</b><dl>${row(CFG.lab.elem,s.elemento)}${row(CFG.lab.mat,s.material)}${row(CFG.lab.manif,s.manifestacao)}${row(CFG.lab.causa,s.causa)}${row(CFG.lab.orig,s.origem)}${row('Descrição',s.descricao)}${row('Observações',s.observacoes)}${row('Confiança',s.confianca)}</dl>
+    <div class="row">${a.ia.usada?'':'<button class="btn pri sm" data-a="iausar">Usar nos campos vazios</button><button class="btn sm" data-a="iatudo">Substituir tudo</button>'}<button class="btn sm" data-a="iadesc">Descartar</button></div>
+    ${a.ia.usada?'<p class="note">Os campos foram preenchidos com a sugestão. Confira antes de salvar.</p>':'<p class="note">Sugestão automática: confira com o que você vê em campo.</p>'}`}
+  if(a.iaPend)return `<b>✨ Sugestão da IA</b><p class="mut">Na fila: a IA analisa as fotos assim que houver internet.</p>`;
+  if(!IA.url)return '<b>✨ Sugestão da IA</b><p class="mut">A IA ainda não foi ligada: falta configurar o servidor da IA.</p>';
+  return `<b>✨ Sugestão da IA</b><p class="mut">A IA olha as fotos e sugere ${esc(String(CFG.lab.elem||'elemento').toLowerCase())}, material, manifestação, causa, origem e uma descrição. Você confere antes de salvar.</p>
+   ${a.iaErr?`<p class="aerr">${esc(a.iaErr)}</p>`:''}<button class="btn sm" data-a="iasug" ${a.fotos.length?'':'disabled'}>${a.iaErr?'Tentar de novo':'Sugerir com IA'}</button>${a.fotos.length?'':'<p class="note">Tire pelo menos uma foto primeiro.</p>'}`}
+const iaHTML=a=>IA?`<div class="iab" id="iabox">${iaInner(a)}</div>`:'';
+function iaBox(){const b=$('#iabox');if(b&&S.ed)b.innerHTML=iaInner(S.ed)}
+async function iaPedir(){const a=S.ed;if(!a||!IA)return;delete a.iaErr;
+  if(navigator.onLine===false){a.iaPend={dev:await devId(),em:Date.now()};saveDraft(true);iaBox();st('A IA analisa quando houver internet');return}
+  iaBusy.add(a.id);iaBox();
+  try{const sug=await iaSugerir(a);if(S.ed&&S.ed.id===a.id){S.ed.ia={sug,em:Date.now()};delete S.ed.iaPend;saveDraft(true)}}
+  catch(e){if(e.code==='net'){a.iaPend={dev:await devId(),em:Date.now()};st('A IA analisa quando houver internet')}else a.iaErr=iaMsg(e);saveDraft(true)}
+  iaBusy.delete(a.id);iaBox()}
+function iaUsar(tudo){const a=S.ed,s=a&&a.ia&&a.ia.sug;if(!s)return;
+  const set=(k,v)=>{if(v&&(tudo||!String(a[k]||'').trim()))a[k]=v};
+  set('elem',s.elemento);set('mat',s.material);set('manif',s.manifestacao);set('causa',s.causa);set('orig',s.origem);set('descr',s.descricao);
+  a.ia.usada=Date.now();saveDraft(true);drawSheet()}
+/* fila: itens salvos com fotos e sem descrição vão para a IA quando houver internet (cada aparelho cuida dos próprios pedidos) */
+async function iaRun(){clearTimeout(iaT);if(!IA||!IA.url||AU.st!=='in'||!CFG||!B)return;const me=await devId();
+  if(navigator.onLine!==false)for(const o of [...docs.values()]){
+    if(o.kind!=='anom'||!o.iaPend||iaBusy.has(o.id))continue;if(o.iaPend.dev!==me&&Date.now()-(+o.iaPend.em||0)<18e5)continue;
+    iaBusy.add(o.id);if(S.ed&&S.ed.id===o.id)iaBox();
+    try{const sug=await iaSugerir(o),x=docs.get(o.id);if(x){x.ia={sug,em:Date.now()};delete x.iaPend;delete x.iaErr;persist(x);if(S.ed&&S.ed.id===x.id){S.ed.ia=x.ia;delete S.ed.iaPend;saveDraft(true)}}}
+    catch(e){iaBusy.delete(o.id);if(e.code==='net')break;const x=docs.get(o.id);if(x){delete x.iaPend;x.iaErr=iaMsg(e);persist(x)}}
+    iaBusy.delete(o.id);if(S.ed&&S.ed.id===o.id)iaBox();else onRemote()}
+  iaT=setTimeout(iaRun,60000)}
+addEventListener('online',()=>setTimeout(iaRun,1500));
+
 /* ---------- telas de acesso ---------- */
-function vBoot(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;st('');$('#main').innerHTML='<div class="empty"><p><b>Abrindo…</b></p></div>'}
-function vLogin(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;st('');if(AU.tab==='pw')return vReset();const up=AU.tab==='up',f=AU.f;
+function vBoot(){$('#ttl').textContent=APPN;$('#back').hidden=true;st('');$('#main').innerHTML='<div class="empty"><p><b>Abrindo…</b></p></div>'}
+function vLogin(){$('#ttl').textContent=APPN;$('#back').hidden=true;st('');if(AU.tab==='pw')return vReset();const up=AU.tab==='up',f=AU.f;
   $('#main').innerHTML=`<div class="auth">
-  <div class="ahero">${frameSVG(3)}<p class="mut">Relatório de inspeção estrutural em campo, com fotos, no modelo da empresa.</p></div>
+  <div class="ahero">${frameSVG(3)}<p class="mut">Relatório de inspeção estrutural em campo, com fotos, no modelo da empresa.</p>${CONF.aviso?`<p class="aviso">${esc(CONF.aviso)}</p>`:''}</div>
   ${instHTML()}
   <div class="seg2" role="tablist" aria-label="Acesso"><button role="tab" data-atab="in" aria-selected="${!up}" aria-pressed="${!up}">Entrar</button><button role="tab" data-atab="up" aria-selected="${up}" aria-pressed="${up}">Criar cadastro</button></div>
   <form id="fauth" class="aform" novalidate>
@@ -604,7 +660,7 @@ function vReset(){const f=AU.f;
    ${AU.err?`<p class="aerr" role="alert">${esc(AU.err)}</p>`:''}
   </form>
   <button class="btn sm lnk" data-atab="in">← Voltar para entrar</button></div>`}
-function vPend(){$('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;st('');const ina=ME&&ME.status==='inativo';
+function vPend(){$('#ttl').textContent=APPN;$('#back').hidden=true;st('');const ina=ME&&ME.status==='inativo';
   $('#main').innerHTML=`<div class="auth"><div class="empty"><p><b>${ina?'Acesso desativado':'Cadastro aguardando liberação'}</b></p>${ME?`<p class="mut">${esc(ME.nome)} · matrícula ${esc(ME.mat)}</p>`:''}
   <p>${ina?'Seu acesso a este app está desativado. Fale com o administrador.':'Seu cadastro foi enviado. Assim que um administrador liberar, o app abre sozinho.'}</p>
   <div class="row" style="justify-content:center"><button class="btn pri" data-a="recheck">Verificar de novo</button><button class="btn" data-a="sair">Sair</button></div></div></div>`;
@@ -653,9 +709,9 @@ async function baixarFotos(i,btn){await busy(btn,'Juntando as fotos…',async()=
   await zipFotos();if(box)box.innerHTML=`<div class="row"><button class="btn sm" data-a="fzip">Baixar .zip de novo</button></div><p class="note">${info}.</p>`})}
 
 function vList(){
-  $('#ttl').textContent='Inspeção Estrutural';$('#back').hidden=true;
+  $('#ttl').textContent=APPN;$('#back').hidden=true;
   const L=insps(),na=[...docs.values()].filter(o=>o.kind==='anom').length;
-  $('#main').innerHTML=`<h2>Inspeções</h2>${whoHTML()}${instHTML()}
+  $('#main').innerHTML=`<h2>Inspeções</h2>${CONF.aviso?`<p class="aviso">${esc(CONF.aviso)}</p>`:''}${whoHTML()}${instHTML()}
   ${CFG?`<div class="hero">${frameSVG(na)}<div class="row sb"><span class="mut">Modelo: ${esc(CFG.name)}</span><button class="btn pri" data-a="nova">+ Nova inspeção</button></div></div>`:tplBusy?`<div class="empty"><p><b>${MODE==='local'?'Carregando':'Baixando'} o modelo do relatório…</b></p></div>`:MODE!=='local'&&!isAdm()?`<div class="empty"><p><b>Aguardando o modelo do relatório</b></p><p class="mut">Um administrador precisa enviar o arquivo do modelo. Depois disso, ele chega aqui sozinho.</p>${tplErr?`<p class="note">${esc(tplErr)}</p>`:''}<button class="btn sm" data-a="tplchk">Verificar de novo</button></div>`:MODE!=='local'?`<div class="empty"><p><b>Envie o modelo do relatório (.xlsx)</b></p><p class="mut">Escolha o arquivo “Relatório de Inspeção Estrutural - rev1.xlsx”. Ele fica guardado no banco, só para logins ativos, e todos os usuários passam a recebê-lo automaticamente.</p><label class="btn pri up">Escolher arquivo do modelo<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-up="tpl"></label>${tplErr?`<p class="note">${esc(tplErr)}</p>`:''}</div>`:`<div class="empty"><p><b>Carregue o modelo do relatório (.xlsx)</b></p><p class="mut">Escolha o arquivo “Relatório de Inspeção Estrutural - rev1.xlsx”. Ele fica guardado neste aparelho e o app passa a usar as listas, os critérios e o layout dele.</p><label class="btn pri up">Escolher arquivo do modelo<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-up="tpl"></label>${tplErr?`<p class="note">${esc(tplErr)}</p>`:''}</div>`}
   ${CFG?(L.length?L.map(i=>{const s=sumOf(i),nf=s.A.reduce((n,a)=>n+a.fotos.length,0)+i.gerais.length,d=i.d;
     return `<button class="card" data-open="${esc(i.id)}"><span class="cth" ${bg(i.gerais[0])}>${i.gerais.length?'':'sem foto'}</span><span class="cb"><b>${esc(d.tag||'Ativo sem TAG')}</b><span class="mut">${esc([d.tipo,d.unid].filter(Boolean).join(' · '))}</span><span class="mut">${esc([fdate(d.data),pl(s.A.length,'item','itens'),pl(nf,'foto','fotos'),MODE!=='local'&&i.cri?'por '+i.cri.nome:''].filter(Boolean).join(' · '))}</span><span class="bds">${s.nivel?badge(CFG.calc.risk,s.nivel,'Risco '+s.pmax):''}${s.prio?badge(CFG.calc.gutp,s.prio,'GUT '+s.gmax):''}${s.venc?`<span class="bd pe">${pl(s.venc,'prazo vencido','prazos vencidos')}</span>`:''}</span></span></button>`}).join('')
@@ -736,6 +792,7 @@ function drawSheet(){
   <h3 style="margin-top:4px">Registro fotográfico <span class="mut">${a.fotos.length} de ${MAXF}</span></h3>
   ${a.fotos.length?`<div class="tiles">${a.fotos.map((f,j)=>`<div class="tile"><div class="im" ${bgFull(f)}><button data-rmf="${j}" aria-label="Remover foto ${j+1}">✕</button></div><input data-leg="${j}" value="${esc(f.leg)}" placeholder="Legenda" aria-label="Legenda da foto ${j+1}"></div>`).join('')}</div>`:''}
   ${a.fotos.length<MAXF?`<div class="cap">${camBtn('anom','Câmera')}<label class="btn up">${IC.img} Galeria (várias)<input type="file" accept="image/*" multiple data-up="anom"></label></div><p class="note">${canCam()?'A câmera fica aberta: tire as fotos em sequência e toque em Concluir.':'Toque em Câmera de novo para cada foto, ou escolha várias de uma vez na Galeria.'}</p>`:''}
+  ${iaHTML(a)}
   <section class="sec"><h3>Identificação e diagnóstico patológico</h3><div class="grid">
    <label class="f w"><span>Localização</span><input data-ak="loc" value="${esc(a.loc)}" placeholder="Ex.: eixo 4, pilar P3, face norte, cota +12,0"></label>
    <label class="f"><span>${esc(lab.elem)}</span>${sel('elem',L.elem)}</label>
@@ -953,7 +1010,7 @@ document.addEventListener('click',async e=>{
   else if(a==='ex'&&CFG){const n=exemplo();S.cur=n.id;S.view='edit';S.tab='itens';render();scrollTo(0,0)}
   else if(a==='novaA'&&i)openA(newAnom(i.id));
   else if(a==='fechar')closeA(false);
-  else if(a==='salvarA'&&S.ed){S.rmF.forEach(dropPhoto);S.last={elem:S.ed.elem,mat:S.ed.mat,resp:S.ed.resp,loc:S.ed.loc};persist(S.ed);closeA(true)}
+  else if(a==='salvarA'&&S.ed){S.rmF.forEach(dropPhoto);if(IA&&IA.url&&IA.auto&&S.ed.fotos.length&&!String(S.ed.descr||'').trim()&&!S.ed.ia&&!S.ed.iaPend&&!iaBusy.has(S.ed.id)){S.ed.iaPend={dev:DEV||nid(),em:Date.now()};if(!DEV){DEV=S.ed.iaPend.dev;IDB.put('meta','dev',DEV)}setTimeout(iaRun,1200)}S.last={elem:S.ed.elem,mat:S.ed.mat,resp:S.ed.resp,loc:S.ed.loc};persist(S.ed);closeA(true)}
   else if(a==='dupA'&&S.ed){S.rmF.forEach(dropPhoto);persist(S.ed);const c=clone(S.ed);c.id=nid();c.created=Date.now();c.fotos=[];closeA(true);openA(c)}
   else if(a==='delA'&&S.ed){if(!S.delArm){S.delArm=true;drawSheet()}else{const o=docs.get(S.ed.id);new Set([...(o?o.fotos.map(f=>f.id):[]),...S.ed.fotos.map(f=>f.id),...S.rmF]).forEach(dropPhoto);S.newF=[];rmDoc(S.ed.id);closeA(true)}}
   else if(a==='delI'&&i&&canDelI(i)){if(!S.delArm){S.delArm=true;tDados(i)}else{anoms(i.id).forEach(x=>{x.fotos.forEach(f=>dropPhoto(f.id));rmDoc(x.id)});i.gerais.forEach(f=>dropPhoto(f.id));rmDoc(i.id);S.delArm=false;S.view='list';render()}}
@@ -967,12 +1024,16 @@ document.addEventListener('click',async e=>{
   else if(a==='fotos'&&i)baixarFotos(i,t);
   else if(a==='fshare'&&FZ){try{await navigator.share({files:FZ.files})}catch(err){if(err&&err.name!=='AbortError')st('Não foi possível compartilhar — use “Baixar .zip”')}}
   else if(a==='fzip'&&FZ)zipFotos();
+  else if(a==='iasug'&&S.ed)iaPedir();
+  else if(a==='iausar'&&S.ed)iaUsar(false);
+  else if(a==='iatudo'&&S.ed)iaUsar(true);
+  else if(a==='iadesc'&&S.ed){delete S.ed.ia;delete S.ed.iaErr;saveDraft(true);drawSheet()}
   else if(a==='exp'&&dl)busy(t,'Preparando backup…',async()=>{const ids=new Set();for(const o of docs.values()){if(o.kind==='insp')o.gerais.forEach(f=>ids.add(f.id));if(o.kind==='anom')o.fotos.forEach(f=>ids.add(f.id))}
     const fotos={};let miss=0;for(const id of ids){const p=await getPhoto(id);if(p)fotos[id]={data:p.data,w:p.w||0,h:p.h||0};else miss++}
     try{await dl.save({filename:`backup-inspecoes-${today()}.json`,data:JSON.stringify({app:'inspecao-estrutural',v:3,docs:[...docs.values()],fotos})});st(miss?`Backup salvo — ${miss} foto(s) indisponível(is)`:'Backup completo salvo')}catch(err){st(dlErr(err))}});
   else if(a==='imp')$('#imp').click();
   else if(a==='inst'&&BIP){const ev=BIP;BIP=null;try{await ev.prompt();await ev.userChoice}catch(err){}vList()}
-  else if(a==='instno'){instNo=true;try{localStorage.setItem('inspEstr.instNo','1')}catch(err){}vList()}
+  else if(a==='instno'){instNo=true;try{localStorage.setItem(KP+'.instNo','1')}catch(err){}vList()}
   else if(a==='cam'){const tt=t.dataset.t;if(tt==='nova'){if(!i)return;if(!S.ed)openA(newAnom(i.id));camOpen('anom')}else camOpen(tt)}
   else if(a==='camshot')camShot();
   else if(a==='camx')camClose();
