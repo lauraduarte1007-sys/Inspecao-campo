@@ -332,7 +332,9 @@ function mkFb(cfg){let F=null,auth=null,db=null,uid=null;const mail=m=>m+'@matri
   async function mkProf(nome,mat){let first=!(await F.getDoc(F.doc(db,C('config'),'admin'))).exists();
     for(let k=0;k<2;k++){const p={mat,nome,role:first?'admin':'user',status:first?'ativo':'pendente',criado:F.serverTimestamp()},b=F.writeBatch(db);b.set(F.doc(db,C('users'),uid),p);if(first)b.set(F.doc(db,C('config'),'admin'),{uid});
       try{await b.commit();return{uid,mat,nome,role:p.role,status:p.status}}catch(e){if(first&&/permission/.test(String(e.code))){first=false;continue}throw e}}}
-  const ensure=async(nome,mat)=>{const p=await prof();if(p)return p;const m=mat||String((auth.currentUser&&auth.currentUser.email)||'').split('@')[0].split('+')[0];return mkProf(nome||m,m)};
+  const ensure=async(nome,mat)=>{const p=await prof();if(p)return p;const m=mat||String((auth.currentUser&&auth.currentUser.email)||'').split('@')[0].split('+')[0];
+    if(!nome&&PX){try{const s=await F.getDoc(F.doc(db,'users',uid));if(s.exists()&&s.data().nome)nome=s.data().nome}catch(e){}}   /* na cópia, aproveita o nome do cadastro do app principal */
+    return mkProf(nome||m,m)};
   const conta=async mat=>{try{const s=await F.getDoc(F.doc(db,C('contas'),mat));if(s.exists()&&s.data().email)return s.data().email}catch(e){}return mail(mat)};
   const pq=c=>[F.where('ts','>',F.Timestamp.fromMillis(Math.max(0,(+c||0)-2000))),F.orderBy('ts')];
   return{caps:{resetPw:false},
