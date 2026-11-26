@@ -63,6 +63,25 @@ function auth(req, need) {
 }
 const activeAdmins = () => db.prepare("SELECT COUNT(*) AS n FROM users WHERE role='admin' AND status='ativo'").get().n;
 
+// ---------- avisos ao vivo (Server-Sent Events): o app busca as mudanças assim que recebe o aviso ----------
+const subs = new Set();
+function openEvents(req, res) {
+  const s = auth(req, true);
+  res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.write(': ok\n\n');
+  const sub = { res, uid: s.uid }; subs.add(sub);
+  const hb = setInterval(() => res.write(': ping\n\n'), 25000);
+  req.on('close', () => { clearInterval(hb); subs.delete(sub); });
+}
+function notify(event) {
+  const st = db.prepare('SELECT status FROM users WHERE uid = ?');
+  for (const sub of subs) {
+    const u = st.get(sub.uid);
+    if (!u || u.status !== 'ativo') { subs.delete(sub); sub.res.end(); continue; }
+    if (event) sub.res.write(`event: ${event}\ndata: ${SEQ}\n\n`);
+  }
+}
+
 // ---------- HTTP ----------
 function send(res, status, body) {
   const b = body === undefined ? '' : JSON.stringify(body);
@@ -140,6 +159,7 @@ on('PATCH', '/api/users/:uid', async (req, p) => {
     db.prepare('UPDATE users SET status=?, role=?, nome=?, salt=?, hash=? WHERE uid=?').run(status, role, nome, salt, hash, uid);
     if (b.senha !== undefined) db.prepare('DELETE FROM sessions WHERE uid = ?').run(uid);
   });
+  notify();   // quem foi desativado perde o canal ao vivo na hora
   return { user: pub(db.prepare('SELECT * FROM users WHERE uid = ?').get(uid)) };
 });
 
@@ -149,6 +169,7 @@ on('DELETE', '/api/users/:uid', (req, p) => {
   const u = db.prepare('SELECT * FROM users WHERE uid = ?').get(uid); if (!u) E(404, 'notfound');
   if (u.role === 'admin' && u.status === 'ativo' && activeAdmins() < 2) E(409, 'last');
   db.prepare('DELETE FROM users WHERE uid = ?').run(uid);
+  notify();
   return { ok: true };
 });
 
@@ -170,6 +191,7 @@ on('POST', '/api/docs', async (req) => {
     ON CONFLICT(id) DO UPDATE SET kind=excluded.kind, j=excluded.j, updated=excluded.updated, del=excluded.del, by=excluded.by, byNome=excluded.byNome, seq=excluded.seq
     WHERE excluded.updated >= docs.updated`);
   tx(() => { for (const d of list) up.run(d.id, d.del ? (d.kind || '') : d.kind, d.del ? '' : d.j, Math.max(0, +d.updated || Date.now()), d.del ? 1 : 0, me.uid, me.nome, ++SEQ); });
+  notify('docs');
   return { ok: true, cursor: SEQ };
 });
 
@@ -198,6 +220,7 @@ on('PUT', '/api/modelo', async (req) => {
     db.prepare("INSERT INTO config(k,v) VALUES('modelo',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").run(v);
     db.prepare("INSERT INTO config(k,v) VALUES('modeloInfo',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").run(JSON.stringify({ ver: b.ver, name: b.name, em: +b.em || Date.now() }));
   });
+  notify('modelo');
   return { ok: true };
 });
 
@@ -219,6 +242,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname.startsWith('/api/')) {
       cors(req, res);
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+      if (req.method === 'GET' && url.pathname === '/api/eventos') { openEvents(req, res); return; }
       for (const r of routes) { if (r.method !== req.method) continue; const m = r.re.exec(url.pathname); if (m) { send(res, 200, await r.fn(req, m.groups || {}, url)); return; } }
       E(404, 'notfound');
     }

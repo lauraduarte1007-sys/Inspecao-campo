@@ -71,7 +71,11 @@ O servidor numera cada gravação com um contador crescente (`seq`). O app pede 
 | `GET /api/docs?since=N` | ativo | `since`: último `cursor` recebido (0 na primeira vez) | `{docs:[{id,kind,j,updated,del,byNome}], cursor, more}`. Até 500 por página, em ordem de `seq`; `more:true` se houver mais |
 | `POST /api/docs` | ativo | `{docs:[{id,kind,j,updated,del}…]}` (até 200) | `{ok:true}`. Grava tudo numa transação; guarda quem gravou (`by`, `byNome`) |
 
-O app consulta `GET /api/docs` a cada 30 segundos com o app aberto, ao voltar a conexão e ao reabrir o app.
+### Avisos ao vivo
+
+`GET /api/eventos` (ativo) mantém a resposta aberta no formato *Server-Sent Events* (`Content-Type: text/event-stream`). A cada gravação de inspeções, o servidor envia `event: docs` (e `event: modelo` quando o administrador troca o modelo), e o app busca as mudanças na hora com `GET /api/docs`. A cada 25 segundos vai um comentário `: ping` para o proxy não fechar a conexão. Quem é desativado perde o canal na hora.
+
+Se o canal ao vivo não estiver disponível (por exemplo, um proxy que corta respostas longas), o app volta a consultar `GET /api/docs` a cada 30 segundos, e também ao voltar a conexão e ao reabrir o app. No proxy reverso, desative o *buffering* dessa rota (nginx: `proxy_buffering off;`) e use um tempo limite de leitura maior que 60 segundos.
 
 ## Fotos
 

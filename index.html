@@ -303,6 +303,10 @@ function mkApi(base){base=String(base).replace(/\/+$/,'');let tok=null;
     resetPw:(uid,senha)=>call('PATCH','/users/'+P(uid),{senha}),
     async pull(c){const out=[];let cur=+c||0;for(let g=0;g<60;g++){const j=await call('GET','/docs?since='+cur);out.push(...(j.docs||[]));cur=Math.max(cur,+j.cursor||0);if(!j.more)break}return{docs:out,cursor:cur}},
     push:list=>call('POST','/docs',{docs:list}),
+    async watch(signal,cb){let r;try{r=await fetch(base+'/eventos',{headers:tok?{Authorization:'Bearer '+tok}:{},signal,cache:'no-store',credentials:'omit'})}catch(e){throw new AppErr('net')}
+      if(!r.ok||!r.body)throw new AppErr(r.status===401?'auth':r.status===403?'denied':'server');
+      const rd=r.body.getReader(),td=new TextDecoder();let buf='';cb('docs');
+      for(;;){const {value,done}=await rd.read();if(done)break;buf+=td.decode(value,{stream:true});let k;while((k=buf.indexOf('\n\n'))>=0){const ev=buf.slice(0,k);buf=buf.slice(k+2);if(/^data:/m.test(ev)){const m=/^event:\s*(\w+)/m.exec(ev);cb(m?m[1]:'docs')}}}},
     getFoto:id=>call('GET','/fotos/'+P(id)).catch(e=>{if(e.code==='notfound')return null;throw e}),
     putFoto:(id,r)=>call('PUT','/fotos/'+P(id),r),
     delFoto:id=>call('DELETE','/fotos/'+P(id)).catch(e=>{if(e.code!=='notfound')throw e}),
@@ -339,6 +343,11 @@ function mkFb(cfg){let F=null,auth=null,db=null,uid=null;const mail=m=>m+'@matri
         for(const x of s.docs){const d=x.data(),t=d.ts&&d.ts.toMillis?d.ts.toMillis():0;if(t>mx)mx=t;out.push({id:x.id,kind:d.kind,j:d.j,updated:+d.updated||0,del:!!d.del})}
         if(s.docs.length<300)break;last=s.docs[s.docs.length-1]}
       return{docs:out,cursor:mx}}),
+    watchModelo(cb){let first=true;return F.onSnapshot(F.doc(db,'config','modeloInfo'),s=>{if(first){first=false;return}cb()},()=>{})},
+    listen(c,onDocs,onErr){const q=F.query(F.collection(db,'docs'),...pq(c));
+      return F.onSnapshot(q,{includeMetadataChanges:true},s=>{const out=[];let mx=+c||0;
+        for(const ch of s.docChanges()){if(ch.type==='removed')continue;const x=ch.doc;if(x.metadata.hasPendingWrites)continue;const d=x.data(),t=d.ts&&d.ts.toMillis?d.ts.toMillis():0;if(t>mx)mx=t;out.push({id:x.id,kind:d.kind,j:d.j,updated:+d.updated||0,del:!!d.del})}
+        onDocs(out,mx,!!s.metadata.fromCache)},e=>onErr(E(e)))},
     push:list=>T(async()=>{const b=F.writeBatch(db);for(const r of list)b.set(F.doc(db,'docs',r.id),{kind:r.kind||'',j:r.j||'',updated:+r.updated||0,del:!!r.del,by:uid,byNome:(ME&&ME.nome)||'',ts:F.serverTimestamp()});await b.commit()}),
     getFoto:id=>T(async()=>{const s=await F.getDoc(F.doc(db,'fotos',id));if(!s.exists())return null;const d=s.data();return{data:d.data,w:+d.w||0,h:+d.h||0}}),
     putFoto:(id,r)=>T(()=>F.setDoc(F.doc(db,'fotos',id),{data:r.data,w:+r.w||0,h:+r.h||0,by:uid,ts:F.serverTimestamp()})),
@@ -349,7 +358,7 @@ function mkFb(cfg){let F=null,auth=null,db=null,uid=null;const mail=m=>m+'@matri
 
 /* ---------- sincronização: envia o que mudou aqui e busca só o que mudou no banco ---------- */
 function updSt(net){if(net!==undefined)netDown=!!net;if(MODE==='local'){st('Salvo neste aparelho');return}if(AU.st!=='in'){st('');return}
-  const n=dirty.size;st(n?(netDown?`Sem conexão — ${n} pendente${n>1?'s':''}`:'Sincronizando…'):lastErr||(netDown?'Sem conexão — tudo salvo no aparelho':synced0?'Sincronizado':'Sincronizando…'))}
+  const n=dirty.size,off=netDown||navigator.onLine===false;st(n?(off?`Sem conexão — ${n} pendente${n>1?'s':''}`:'Sincronizando…'):lastErr||(off?'Sem conexão — tudo salvo no aparelho':synced0?'Sincronizado':'Sincronizando…'))}
 function saveLS(){const a=[...docs.values()];try{localStorage.setItem(LSK,JSON.stringify(a))}catch(e){try{localStorage.setItem(LSK,JSON.stringify(a.map(o=>o.kind==='anom'?{...o,fotos:o.fotos.map(f=>({...f,t:''}))}:o)))}catch(e2){}}}
 function saveMeta(){IDB.put('meta','sync',{dirty:[...dirty]})}
 function mark(id,op){dirty.set(id,{op,v:++seq});saveMeta()}
@@ -375,19 +384,31 @@ async function flush(){
   if(stop){accessLost(stop);return}
   if(dirty.size){clearTimeout(ft);ft=setTimeout(flush,net?20000:400)}
   updSt(net)}
-addEventListener('online',()=>{if(syncOn){later(200);pull()}});
+addEventListener('online',()=>{if(syncOn){later(200);live()}});
+addEventListener('offline',()=>updSt());
 function applyRemote(L){let ch=false;
   for(const r of L){if(!r||!okId(r.id)||dirty.has(r.id))continue;const l=docs.get(r.id);
     if(r.del){if(l){docs.delete(r.id);IDB.del('docs',r.id);(l.kind==='anom'?l.fotos:l.kind==='insp'?l.gerais:[]).forEach(f=>{fmem.delete(f.id);IDB.del('fotos',f.id)});ch=true}continue}
     let o=null;try{o=norm(Object.assign(JSON.parse(r.j),{id:r.id}))}catch(e){}
     if(o&&(!l||o.updated>l.updated)){docs.set(o.id,o);IDB.put('docs',o.id,o);ch=true}}
   if(ch){if(!idbOK)saveLS();onRemote()}}
-async function pull(){if(!syncOn||!B)return;clearTimeout(pollT);
-  try{const r=await B.pull(cursor);if(!syncOn)return;applyRemote(r.docs);if(r.cursor>cursor){cursor=r.cursor;IDB.put('meta','cursor',{bk:BK,v:cursor})}netDown=false;synced0=true;lastPull=Date.now();
-    if(Date.now()-tplChk>6e5)checkTpl()}
-  catch(e){if(e.code==='denied'||e.code==='auth'){accessLost(e);return}netDown=true}
-  updSt();if(syncOn)pollT=setTimeout(pull,document.hidden?POLL*4:POLL)}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&syncOn&&Date.now()-lastPull>Math.min(POLL/2,10000))pull()});
+let pulling=false,pullAgain=false;
+async function pull(){if(!syncOn||!B)return;if(pulling){pullAgain=true;return}pulling=true;clearTimeout(pollT);let stop=null;
+  try{const r=await B.pull(cursor);if(syncOn){applyRemote(r.docs);if(r.cursor>cursor){cursor=r.cursor;IDB.put('meta','cursor',{bk:BK,v:cursor})}netDown=false;synced0=true;lastPull=Date.now();if(Date.now()-tplChk>6e5)checkTpl()}}
+  catch(e){if(e.code==='denied'||e.code==='auth')stop=e;else netDown=true}
+  pulling=false;if(stop){accessLost(stop);return}if(!syncOn)return;
+  if(pullAgain){pullAgain=false;return pull()}
+  updSt();pollT=setTimeout(pull,wAbort?Math.max(POLL,120000):document.hidden?POLL*4:POLL)}
+/* ao vivo: o Firebase avisa cada mudança; o servidor da TI manda um sinal e o app busca na hora */
+let unsub=null,unsubM=null,lisT=0,wAbort=null,wT=0,meT=0;
+function attach(){if(!syncOn||unsub||!B.listen)return;if(!unsubM&&B.watchModelo){try{unsubM=B.watchModelo(()=>checkTpl())}catch(e){}}
+  unsub=B.listen(cursor,(L,mx,cache)=>{applyRemote(L);if(mx>cursor){cursor=mx;IDB.put('meta','cursor',{bk:BK,v:cursor})}
+      if(!cache){netDown=false;synced0=true;lastPull=Date.now()}else if(!L.length)netDown=navigator.onLine===false;updSt()},
+    e=>{unsub=null;if(e.code==='denied'||e.code==='auth'){accessLost(e);return}netDown=true;updSt();clearTimeout(lisT);lisT=setTimeout(attach,15000)})}
+function watchStart(){if(!syncOn||!B.watch||wAbort)return;const ac=new AbortController();wAbort=ac;
+  B.watch(ac.signal,t=>t==='modelo'?checkTpl():pull()).catch(e=>{if(e.code==='denied'||e.code==='auth')accessLost(e)}).finally(()=>{if(wAbort===ac)wAbort=null;if(syncOn&&!ac.signal.aborted){clearTimeout(wT);wT=setTimeout(watchStart,10000)}})}
+function live(){if(!syncOn)return;if(B.listen){if(!unsub)attach()}else{pull();watchStart()}}
+document.addEventListener('visibilitychange',()=>{if(document.hidden||!syncOn)return;if(B.listen)live();else{if(Date.now()-lastPull>3000)pull();watchStart()}});
 async function startSync(){if(syncOn||!B)return;syncOn=true;synced0=false;
   const c=await IDB.get('meta','cursor');
   if(!c||c.bk!==BK){cursor=0;const fids=new Set();   /* primeira vez deste aparelho neste banco: envia o que só existe aqui */
@@ -395,8 +416,9 @@ async function startSync(){if(syncOn||!B)return;syncOn=true;synced0=false;
     for(const id of fids)if(!dirty.has(id)&&await fLocal(id))mark(id,'f');
     IDB.put('meta','cursor',{bk:BK,v:0})}
   else cursor=+c.v||0;
-  updSt();pull();later(600)}
-function stopSync(){syncOn=false;clearTimeout(pollT);clearTimeout(ft)}
+  updSt();later(600);if(B.listen)attach();else{pull();watchStart()}
+  clearInterval(meT);meT=setInterval(()=>{if(!syncOn)return;if(Date.now()-tplChk>6e5)checkTpl();B.me().then(p=>{if(p&&p.status!=='ativo')setMe(p)},()=>{})},6e5)}
+function stopSync(){syncOn=false;clearTimeout(pollT);clearTimeout(ft);clearTimeout(lisT);clearTimeout(wT);clearInterval(meT);if(unsub){try{unsub()}catch(e){}unsub=null}if(unsubM){try{unsubM()}catch(e){}unsubM=null}if(wAbort){const a=wAbort;wAbort=null;a.abort()}}
 async function accessLost(e){stopSync();
   if(e.code==='auth'){AU.st='out';AU.err=ERRM.auth;ME=null;entered=false;render();return}
   try{const p=await B.me();if(p&&p.status==='ativo'){lastErr=ERRM.denied;updSt();setTimeout(()=>{if(AU.st==='in'&&!syncOn)startSync()},60000);return}setMe(p)}
@@ -885,7 +907,7 @@ async function loadTplFile(file){st('Lendo o modelo…');try{const z=await unzip
 /* ---------- eventos ---------- */
 function render(){if(MODE!=='local'&&AU.st!=='in'){AU.st==='out'?vLogin():AU.st==='pend'?vPend():vBoot();return}
   if(S.view==='users'&&!isAdm())S.view='list';S.view==='list'?vList():S.view==='users'?vUsers():vEdit();saveNav()}
-function onRemote(){if(S.ed||AU.st!=='in'||S.view==='users')return;if(S.view==='list')vList();else if(S.tab!=='dados')vEdit();else if(!docs.has(S.cur)){S.view='list';vList()}}
+function onRemote(){if(S.ed||AU.st!=='in'||S.view==='users')return;if(S.view==='edit'&&S.tab==='dados'){const c=document.querySelector('[data-tab=itens] .ct');if(c)c.textContent=anoms(S.cur).length}if(S.view==='list')vList();else if(S.tab!=='dados')vEdit();else if(!docs.has(S.cur)){S.view='list';vList()}}
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-a],[data-open],[data-tab],[data-ea],[data-rmf],[data-rmg],[data-sort],[data-setcd],[data-setaf],[data-ens],[data-atab],[data-ua]');if(!t)return;
   const a=t.dataset.a,i=docs.get(S.cur);if(S.outArm&&a!=='sair')S.outArm=false;
