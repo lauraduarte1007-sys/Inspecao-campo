@@ -25,10 +25,6 @@ O arquivo .xlsx do modelo fica guardado no banco, liberado só para logins ativo
 
 No projeto Firebase `inspecao-campo` (Authentication + Firestore). As regras de segurança estão em [`firestore.rules`](firestore.rules): só quem tem cadastro ativo lê e grava inspeções, fotos e o modelo. Ao alterar as regras, publique o conteúdo do arquivo em *Firebase → Firestore Database → Regras → Publicar*.
 
-## Cópia de teste com IA
-
-Em https://lauraduarte1007-sys.github.io/Inspecao-campo/ia/ fica uma cópia do app que usa o Claude para sugerir a classificação e a descrição a partir das fotos. Ela tem login e dados próprios (coleções `ia_` no mesmo Firebase), separados do app principal. O servidor da IA está em [`servidor-ia`](servidor-ia/LEIA-ME.md).
-
 Para usar um servidor da própria empresa no lugar do Firebase, veja a pasta [`servidor-ti`](servidor-ti/LEIA-ME.md): ela traz um servidor de referência e a especificação da API. A troca é feita só no `config.js`.
 
 ## Atualizar o app
